@@ -1,117 +1,158 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/user_service.dart';
+import '../../models/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final AuthService _authService = AuthService();
+  final _auth = FirebaseAuth.instance;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
-  bool _isAdminLogin = false;
-  bool _isLoading = false;
 
-  void _handleGoogleSignIn() async {
-    setState(() => _isLoading = true);
-    final user = await _authService.signInWithGoogle();
-    setState(() => _isLoading = false);
-    
-    if (user != null) {
-      // Navigation will be handled by the auth state stream wrapper in main.dart
-    } else {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Google Sign-In failed')),
+  bool isLoading = false;
+  AppUser? loggedInUser;
+
+  void loginUser() async {
+    setState(() => isLoading = true);
+    try {
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
+
+      final user = await UserService().fetchUserProfile(cred.user!.uid);
+
+      setState(() => loggedInUser = user);
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Welcome ${user?.username ?? 'User'}')));
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message ?? 'Error')));
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
-  void _handleAdminLogin() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) return;
-    
-    setState(() => _isLoading = true);
-    final user = await _authService.loginAdmin(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-    );
-     setState(() => _isLoading = false);
+  void signOutUser() async {
+    await _auth.signOut();
+    setState(() {
+      loggedInUser = null;
+      _emailController.clear();
+      _passwordController.clear();
+    });
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Signed out successfully')));
+  }
 
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Admin Login failed')),
-      );
-    }
+  void editUserInfo() async {
+    if (loggedInUser == null) return;
+
+    final usernameController = TextEditingController(text: loggedInUser!.username);
+    final emailController = TextEditingController(text: loggedInUser!.email);
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Edit Info'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: usernameController, decoration: InputDecoration(labelText: 'Username')),
+            TextField(controller: emailController, decoration: InputDecoration(labelText: 'Email')),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final updatedUser = AppUser(
+                uid: loggedInUser!.uid,
+                role: loggedInUser!.role,
+                username: usernameController.text.trim(),
+                email: emailController.text.trim(),
+                companyName: loggedInUser!.companyName,
+                serviceAreas: loggedInUser!.serviceAreas,
+                wasteCategories: loggedInUser!.wasteCategories,
+              );
+
+              await UserService().updateUserProfile(loggedInUser!.uid, updatedUser.toMap());
+
+              setState(() => loggedInUser = updatedUser);
+
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text('Info updated')));
+            },
+            child: Text('Save'),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _userInfoWidget() {
+    if (loggedInUser == null) return SizedBox.shrink();
+
+    return Card(
+      margin: EdgeInsets.only(top: 20),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('User Info:', style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text('UID: ${loggedInUser!.uid}'),
+            Text('Role: ${loggedInUser!.role}'),
+            Text('Username: ${loggedInUser!.username ?? '-'}'),
+            Text('Email: ${loggedInUser!.email ?? '-'}'),
+            if (loggedInUser!.companyName != null)
+              Text('Company: ${loggedInUser!.companyName}'),
+            if (loggedInUser!.serviceAreas != null)
+              Text('Service Areas: ${loggedInUser!.serviceAreas?.join(', ')}'),
+            if (loggedInUser!.wasteCategories != null)
+              Text('Waste Categories: ${loggedInUser!.wasteCategories?.join(', ')}'),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                ElevatedButton(onPressed: editUserInfo, child: Text('Edit Info')),
+                SizedBox(width: 10),
+                ElevatedButton(onPressed: signOutUser, child: Text('Sign Out')),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'SmartWaste',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.green),
-              ),
-              const SizedBox(height: 48),
-              
-              if (_isAdminLogin) ...[
-                TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Admin Email', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleAdminLogin,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                  child: _isLoading 
-                    ? const CircularProgressIndicator() 
-                    : const Text('Login as Admin'),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => setState(() => _isAdminLogin = false),
-                  child: const Text('Back to User Login'),
-                ),
-              ] else ...[
-                const Text(
-                  'Welcome Back!',
-                  style: TextStyle(fontSize: 24),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _handleGoogleSignIn,
-                  icon: const Icon(Icons.login),
-                  label: const Text('Sign in with Google'),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () => setState(() => _isAdminLogin = true),
-                  child: const Text('Are you an Admin? Login here'),
-                ),
-              ],
-            ],
-          ),
+      appBar: AppBar(title: Text('Login')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(controller: _emailController, decoration: InputDecoration(labelText: 'Email')),
+            TextField(controller: _passwordController, decoration: InputDecoration(labelText: 'Password'), obscureText: true),
+            SizedBox(height: 20),
+            ElevatedButton(
+                onPressed: isLoading ? null : loginUser,
+                child: isLoading ? CircularProgressIndicator() : Text('Login')),
+            TextButton(
+                onPressed: () => Navigator.pushNamed(context, '/register'),
+                child: Text('Go to Register')),
+            _userInfoWidget(),
+          ],
         ),
       ),
     );

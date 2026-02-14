@@ -1,47 +1,60 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class UserModel {
+class AppUser {
   final String uid;
+  final String role;
   final String email;
-  final String username;
-  final String role; // 'user' or 'admin'
-  final String? photoUrl;
-  final GeoPoint? location;
-  final DateTime createdAt;
 
-  UserModel({
+  // user fields
+  final String? username;
+
+  // company fields
+  final String? companyName;
+  final String? companySSM;
+  final List<String>? wasteCategories;
+  final List<String>? serviceAreas;
+
+  AppUser({
     required this.uid,
-    required this.email,
-    required this.username,
     required this.role,
-    this.photoUrl,
-    this.location,
-    required this.createdAt,
+    required this.email,
+    this.username,
+    this.companyName,
+    this.companySSM,
+    this.wasteCategories,
+    this.serviceAreas,
   });
 
-  // Convert to Map for Firestore
   Map<String, dynamic> toMap() {
     return {
-      'uid': uid,
+      'role': role,
       'email': email,
       'username': username,
-      'role': role,
-      'photoUrl': photoUrl,
-      'location': location,
-      'createdAt': createdAt,
+      'companyName': companyName,
+      'companySSM': companySSM,
+      'wasteCategories': wasteCategories,
+      'serviceAreas': serviceAreas,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isActive': true,
     };
   }
 
-  // Create from Firestore Document
-  factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      uid: map['uid'] ?? '',
-      email: map['email'] ?? '',
-      username: map['username'] ?? '',
-      role: map['role'] ?? 'user',
-      photoUrl: map['photoUrl'],
-      location: map['location'],
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
+  factory AppUser.fromMap(String uid, Map<String, dynamic> map) {
+    return AppUser(
+      uid: uid,
+      role: map['role'],
+      email: map['email'],
+      username: map['username'],
+      companyName: map['companyName'],
+      companySSM: map['companySSM'],
+      wasteCategories:
+          map['wasteCategories'] != null
+              ? List<String>.from(map['wasteCategories'])
+              : null,
+      serviceAreas:
+          map['serviceAreas'] != null
+              ? List<String>.from(map['serviceAreas'])
+              : null,
     );
   }
 }
