@@ -10,8 +10,7 @@
 //
 // class _TaskHomePageState extends State<TaskHomePage> {
 //   final TextEditingController taskController = TextEditingController();
-//   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-//
+//   final FirebaseFirestore _firestore = FirebaseFirestore.instance
 //   // Add task to Firestore
 //   void addTask() {
 //     if (taskController.text.isNotEmpty) {

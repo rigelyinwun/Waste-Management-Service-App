@@ -8,7 +8,7 @@ class TNCPage extends StatelessWidget {
     // Colors matching your SmartWaste theme
     const Color headerTeal = Color(0xFF387664);
     const Color backgroundMint = Color(0xFFE8F3ED);
-
+    
     return Scaffold(
       backgroundColor: backgroundMint,
       appBar: PreferredSize(
