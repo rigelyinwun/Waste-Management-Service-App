@@ -1,22 +1,15 @@
 import 'package:flutter/material.dart';
 
-// =============================================================================
-// SECTION 1: STYLE DEFINITIONS
-// =============================================================================
 class FeedbackStyles {
   static const Color headerTeal = Color(0xFF387664);
-  static const Color backgroundMint = Color(0xFFE8F3ED);
+  static const Color backgroundMint = Color(0xFFD3E6DB); // Matched to other pages
   static const Color fieldMint = Color(0xFFF1F8F5);
   static const Color starBoxTeal = Color(0xFF387664);
   static const String font = 'LexendExa';
 }
 
-// =============================================================================
-// SECTION 2: THE FEEDBACK PAGE
-// =============================================================================
 class FeedbackPage extends StatefulWidget {
   const FeedbackPage({super.key});
-
   @override
   State<FeedbackPage> createState() => _FeedbackPageState();
 }
@@ -24,36 +17,22 @@ class FeedbackPage extends StatefulWidget {
 class _FeedbackPageState extends State<FeedbackPage> {
   int selectedStars = 0;
 
+  PreferredSizeWidget _buildAppBar(String title) => AppBar(
+    backgroundColor: FeedbackStyles.headerTeal,
+    elevation: 0,
+    centerTitle: true,
+    automaticallyImplyLeading: false,
+    title: Text(
+      title,
+      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FeedbackStyles.backgroundMint,
-      // --- Header matching your other pages ---
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          color: FeedbackStyles.headerTeal,
-          padding: const EdgeInsets.only(top: 40, left: 10),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const Text(
-                "Feedback",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: FeedbackStyles.font,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      appBar: _buildAppBar("Feedback"),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(25),
@@ -68,7 +47,6 @@ class _FeedbackPageState extends State<FeedbackPage> {
             ),
             child: Stack(
               children: [
-                // --- Quotation Mark Icon (Top Right) ---
                 const Positioned(
                   top: -10,
                   right: 0,
@@ -126,7 +104,6 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     ),
                     const SizedBox(height: 10),
 
-                    // --- Description Input Field ---
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 15),
                       decoration: BoxDecoration(
@@ -145,9 +122,10 @@ class _FeedbackPageState extends State<FeedbackPage> {
 
                     const SizedBox(height: 30),
 
-                    // --- Submit Button ---
                     ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: FeedbackStyles.headerTeal,
                         minimumSize: const Size(double.infinity, 50),

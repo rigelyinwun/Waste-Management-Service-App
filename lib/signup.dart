@@ -4,7 +4,6 @@ import 'business_signup.dart';
 
 class SignUpPage extends StatelessWidget {
   const SignUpPage({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -14,7 +13,6 @@ class SignUpPage extends StatelessWidget {
       backgroundColor: const Color(0xFFB7D7C0),
       body: Stack(
         children: [
-          // --- HEADER: LEFT HIGH, RIGHT LOW ---
           ClipPath(
             clipper: SyntheticCurveClipper(),
             child: Container(
@@ -42,20 +40,16 @@ class SignUpPage extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  // This extra spacing ensures text stays in the white area
                   SizedBox(height: size.height * 0.05),
                 ],
               ),
             ),
           ),
 
-          // --- CONTENT AREA ---
           SizedBox.expand(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // --- POSITION ADJUSTMENT ---
-                  // Increased this height to push the containers LOWER
                   SizedBox(height: size.height * 0.42),
 
                   Padding(
@@ -87,7 +81,7 @@ class SignUpPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 50), // Bottom padding for scroll
+                  const SizedBox(height: 50),
                 ],
               ),
             ),
@@ -116,7 +110,7 @@ class _BigSelectionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 20), // Large padding for Big Size
+        padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(30),

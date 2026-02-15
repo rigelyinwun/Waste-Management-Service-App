@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 
-// =============================================================================
-// SECTION 1: THE "CSS" LAYER (Embedded Styles)
-// =============================================================================
 class EditProfileStyles {
   static const Color headerTeal = Color(0xFF387664);
-  static const Color backgroundMint = Color(0xFFE8F3ED);
+  static const Color backgroundMint = Color(0xFFD3E6DB);
   static const Color fieldGrey = Color(0xFFD9D9D9);
   static const Color fieldWhite = Colors.white;
   static const Color darkBtn = Color(0xFF1B3022);
@@ -13,7 +10,7 @@ class EditProfileStyles {
 
   static const TextStyle headerTextStyle = TextStyle(
     color: Colors.white,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: FontWeight.bold,
     fontFamily: font,
   );
@@ -22,12 +19,10 @@ class EditProfileStyles {
     fontSize: 18,
     fontWeight: FontWeight.bold,
     fontFamily: font,
+    color: headerTeal,
   );
 }
 
-// =============================================================================
-// SECTION 2: THE PAGE COMPONENT
-// =============================================================================
 class EditProfileIndividualPage extends StatelessWidget {
   const EditProfileIndividualPage({super.key});
 
@@ -35,23 +30,15 @@ class EditProfileIndividualPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: EditProfileStyles.backgroundMint,
-      // Custom AppBar matching Design
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          color: EditProfileStyles.headerTeal,
-          padding: const EdgeInsets.only(top: 40, left: 10),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const Text("Edit Profile", style: EditProfileStyles.headerTextStyle),
-            ],
-          ),
+      appBar: AppBar(
+        backgroundColor: EditProfileStyles.headerTeal,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
+        title: const Text("Edit Profile", style: EditProfileStyles.headerTextStyle),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -61,7 +48,6 @@ class EditProfileIndividualPage extends StatelessWidget {
             children: [
               const SizedBox(height: 40),
 
-              // --- Avatar Section with Camera Icon Overlay ---
               Center(
                 child: Stack(
                   alignment: Alignment.bottomRight,
@@ -70,9 +56,13 @@ class EditProfileIndividualPage extends StatelessWidget {
                       width: 140,
                       height: 140,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: Colors.white.withOpacity(0.5),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(color: Colors.white, width: 3),
+                        image: const DecorationImage(
+                          image: NetworkImage('https://cdn-icons-png.flaticon.com/512/3135/3135715.png'),
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                     Container(
@@ -82,7 +72,7 @@ class EditProfileIndividualPage extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
                       ),
-                      child: const Icon(Icons.camera_alt_outlined, color: Colors.black, size: 28),
+                      child: const Icon(Icons.camera_alt_outlined, color: Colors.black, size: 24),
                     ),
                   ],
                 ),
@@ -94,15 +84,19 @@ class EditProfileIndividualPage extends StatelessWidget {
 
               const _EditInfoField(hint: "Username", isWhite: true),
               const _EditInfoField(hint: "kingstom@gmail.com", isWhite: false), // Non-editable
-              const _EditInfoField(hint: "123 1232", isWhite: true, isPhone: true),
+              const _EditInfoField(hint: "123 4567", isWhite: true, isPhone: true),
               const _EditInfoField(hint: "Gender", isWhite: true),
 
               const SizedBox(height: 40),
 
-              // --- Save Button ---
               Center(
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Profile Updated Successfully!")),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: EditProfileStyles.darkBtn,
                     minimumSize: const Size(220, 55),
@@ -123,9 +117,6 @@ class EditProfileIndividualPage extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// SECTION 3: REUSABLE HELPER WIDGETS
-// =============================================================================
 class _EditInfoField extends StatelessWidget {
   final String hint;
   final bool isWhite;
@@ -145,7 +136,7 @@ class _EditInfoField extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: isWhite ? EditProfileStyles.fieldWhite : EditProfileStyles.fieldGrey,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: TextField(
           enabled: isWhite,
@@ -154,17 +145,16 @@ class _EditInfoField extends StatelessWidget {
             border: InputBorder.none,
             hintText: hint,
             hintStyle: TextStyle(
-              color: Colors.black.withOpacity(0.3),
+              color: isWhite ? Colors.black.withOpacity(0.3) : Colors.black45,
               fontWeight: FontWeight.bold,
             ),
-            // Handles the phone dropdown design from screenshot
             prefixIcon: isPhone
                 ? Padding(
               padding: const EdgeInsets.only(right: 10),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: const [
-                  Text("+60", style: TextStyle(color: Colors.black26, fontWeight: FontWeight.bold)),
+                  Text("+60", style: TextStyle(color: Colors.black38, fontWeight: FontWeight.bold)),
                   Icon(Icons.arrow_drop_down, color: Colors.black54),
                 ],
               ),

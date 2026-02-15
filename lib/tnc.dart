@@ -2,36 +2,27 @@ import 'package:flutter/material.dart';
 
 class TNCPage extends StatelessWidget {
   const TNCPage({super.key});
-
   @override
   Widget build(BuildContext context) {
-    // Colors matching your SmartWaste theme
     const Color headerTeal = Color(0xFF387664);
-    const Color backgroundMint = Color(0xFFE8F3ED);
-    
+    const Color backgroundMint = Color(0xFFD3E6DB);
+
     return Scaffold(
       backgroundColor: backgroundMint,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          color: headerTeal,
-          padding: const EdgeInsets.only(top: 40, left: 10),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const Text(
-                "Terms and Conditions",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+      appBar: AppBar(
+        backgroundColor: headerTeal,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Terms and Conditions",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -41,8 +32,8 @@ class TNCPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Terms & Conditions",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              "SmartWaste Policies",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: headerTeal),
             ),
             const SizedBox(height: 15),
 
@@ -102,14 +93,12 @@ class TNCPage extends StatelessWidget {
     );
   }
 
-  // --- Helper Widgets to keep code clean ---
-
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(top: 15, bottom: 5),
       child: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF387664)),
       ),
     );
   }
@@ -117,7 +106,7 @@ class TNCPage extends StatelessWidget {
   Widget _buildSectionBody(String text) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 11, color: Colors.black87, height: 1.4),
+      style: const TextStyle(fontSize: 12, color: Colors.black87, height: 1.4),
     );
   }
 
@@ -127,11 +116,11 @@ class TNCPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("• ", style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text("• ", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF387664))),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 11, color: Colors.black87, height: 1.4),
+              style: const TextStyle(fontSize: 12, color: Colors.black87, height: 1.4),
             ),
           ),
         ],

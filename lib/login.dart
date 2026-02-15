@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-// =========================================================================
-// SECTION 1: GLOBAL CSS (Colors, Fonts, etc.)
-// =========================================================================
 class GlobalCSS {
   static const Color primaryGreen = Color(0xFF2E6153);
   static const Color mintBackground = Color(0xFFB5D9BC);
@@ -11,24 +8,17 @@ class GlobalCSS {
   static const String fontMain = 'LexendExa';
 }
 
-// Heading Styles
 class LoginHeadingCSS {
   static const double titleSize = 58.0;
   static const double subtitleSize = 18.0;
 }
 
-// Input Field Styles
 class LoginFieldCSS {
   static const double borderRadius = 40.0;
   static const double verticalPadding = 20.0;
   static const double labelFontSize = 13.0;
 }
 
-// =========================================================================
-// SECTION 2: COMPONENTS
-// =========================================================================
-
-// Wave Header
 class LoginWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -52,7 +42,6 @@ class LoginWaveClipper extends CustomClipper<Path> {
   bool shouldReclip(old) => false;
 }
 
-// Header Text
 class LoginHeader extends StatelessWidget {
   const LoginHeader({super.key});
 
@@ -76,7 +65,6 @@ class LoginHeader extends StatelessWidget {
   }
 }
 
-// Input Field
 class LoginInputField extends StatelessWidget {
   final String label;
   final bool isPassword;
@@ -120,7 +108,6 @@ class LoginInputField extends StatelessWidget {
   }
 }
 
-// Login Button → Navigates to Homepage
 class LoginButton extends StatelessWidget {
   const LoginButton({super.key});
 
@@ -134,7 +121,7 @@ class LoginButton extends StatelessWidget {
         elevation: 4,
       ),
       onPressed: () {
-        Navigator.pushReplacementNamed(context, '/homepage');
+        Navigator.pushReplacementNamed(context, '/base');
       },
       child: const Text(
         "Log In",
@@ -143,22 +130,18 @@ class LoginButton extends StatelessWidget {
     );
   }
 }
-
-// =========================================================================
-// SECTION 3: LOGIN PAGE
-// =========================================================================
-
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    const Color highlightColor = Color(0xFF387664);
+
     return Scaffold(
       backgroundColor: GlobalCSS.mintBackground,
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // White Wave Header Section
             Stack(
               children: [
                 Container(height: 400, color: GlobalCSS.mintBackground),
@@ -172,7 +155,6 @@ class LoginPage extends StatelessWidget {
                 ),
               ],
             ),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Column(
@@ -195,7 +177,6 @@ class LoginPage extends StatelessWidget {
                   const LoginButton(),
                   const SizedBox(height: 25),
 
-                  // Footer Links
                   GestureDetector(
                     onTap: () {
                       // TODO: Add Forgot Password Logic
@@ -205,16 +186,28 @@ class LoginPage extends StatelessWidget {
                       style: TextStyle(fontWeight: FontWeight.bold, color: GlobalCSS.primaryGreen),
                     ),
                   ),
-                  const SizedBox(height: 5),
-                  GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/selection'),
-                    child: const Text(
-                      "Sign Up!",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: GlobalCSS.primaryGreen,
-                          fontSize: 18),
-                    ),
+                  const SizedBox(height: 15),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Don't have an account? ",
+                        style: TextStyle(color: GlobalCSS.primaryGreen),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/signup'),
+                        child: const Text(
+                          "Sign Up!",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: highlightColor,
+                            fontSize: 18,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 50),
                 ],

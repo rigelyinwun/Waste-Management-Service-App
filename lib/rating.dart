@@ -1,56 +1,41 @@
 import 'package:flutter/material.dart';
 
-// =============================================================================
-// SECTION 1: STYLE DEFINITIONS
-// =============================================================================
 class RatingStyles {
   static const Color headerTeal = Color(0xFF387664);
-  static const Color backgroundMint = Color(0xFFE8F3ED);
+  static const Color backgroundMint = Color(0xFFD3E6DB); // Updated to your specific green
   static const Color textGreen = Color(0xFF388E3C);
   static const Color textGrey = Color(0xFFAAAAAA);
   static const String fontMain = 'LexendExa';
 }
 
-// =============================================================================
-// SECTION 2: THE RATING PAGE
-// =============================================================================
 class RatingPage extends StatefulWidget {
   const RatingPage({super.key});
-
   @override
   State<RatingPage> createState() => _RatingPageState();
 }
 
 class _RatingPageState extends State<RatingPage> {
-  int _currentRating = 0; // Tracks the selected star
+  int _currentRating = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: RatingStyles.backgroundMint,
-      // --- Teal Header matching your design ---
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          color: RatingStyles.headerTeal,
-          padding: const EdgeInsets.only(top: 40, left: 10),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const Text(
-                "Rating This App",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: RatingStyles.fontMain,
-                ),
-              ),
-            ],
+      appBar: AppBar(
+        backgroundColor: RatingStyles.headerTeal,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Rating This App",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            fontFamily: RatingStyles.fontMain,
           ),
         ),
       ),
@@ -61,7 +46,7 @@ class _RatingPageState extends State<RatingPage> {
             padding: const EdgeInsets.all(30),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(15),
               boxShadow: const [
                 BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 5))
               ],
@@ -69,7 +54,7 @@ class _RatingPageState extends State<RatingPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("🚀", style: TextStyle(fontSize: 60)), // Simplified for code, replace with Image if needed
+                const Text("🚀", style: TextStyle(fontSize: 60)),
                 const SizedBox(height: 20),
 
                 const Text(
@@ -85,7 +70,7 @@ class _RatingPageState extends State<RatingPage> {
                 const SizedBox(height: 10),
 
                 const Text(
-                  "Your feedback helps us create a cleaner environmental",
+                  "Your feedback helps us create a cleaner environment",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: RatingStyles.textGrey,
@@ -95,7 +80,6 @@ class _RatingPageState extends State<RatingPage> {
                 ),
                 const SizedBox(height: 30),
 
-                // --- Star Rating System ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (index) {
@@ -103,7 +87,7 @@ class _RatingPageState extends State<RatingPage> {
                       icon: Icon(
                         index < _currentRating ? Icons.star : Icons.star_border,
                         size: 40,
-                        color: index < _currentRating ? Colors.amber : Colors.black,
+                        color: index < _currentRating ? Colors.amber : Colors.black26,
                       ),
                       onPressed: () {
                         setState(() {
@@ -124,6 +108,19 @@ class _RatingPageState extends State<RatingPage> {
                     fontFamily: RatingStyles.fontMain,
                   ),
                 ),
+
+                if (_currentRating > 0) ...[
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: RatingStyles.headerTeal,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text("Submit"),
+                  )
+                ]
               ],
             ),
           ),

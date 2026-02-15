@@ -7,7 +7,6 @@ class BusinessEditStyles {
   static const Color fieldWhite = Colors.white;
   static const Color darkBtn = Color(0xFF1B3022);
   static const String font = 'LexendExa';
-
   static const TextStyle headerText = TextStyle(
     color: Colors.white,
     fontSize: 22,
@@ -18,13 +17,11 @@ class BusinessEditStyles {
 
 class EditProfileBusinessPage extends StatefulWidget {
   const EditProfileBusinessPage({super.key});
-
   @override
   State<EditProfileBusinessPage> createState() => _EditProfileBusinessPageState();
 }
 
 class _EditProfileBusinessPageState extends State<EditProfileBusinessPage> {
-  // Dropdown values
   String? selectedCategory;
   String? selectedArea;
 
@@ -60,7 +57,6 @@ class _EditProfileBusinessPageState extends State<EditProfileBusinessPage> {
             children: [
               const SizedBox(height: 40),
 
-              // --- Avatar Section ---
               Center(
                 child: Stack(
                   alignment: Alignment.bottomRight,
@@ -85,7 +81,6 @@ class _EditProfileBusinessPageState extends State<EditProfileBusinessPage> {
               const _BusinessField(hint: "123 1232", isWhite: true, isPhone: true),
               const _BusinessField(hint: "Business Registration (SSM)", isWhite: true),
 
-              // --- Dropdown Fields ---
               _buildDropdownField("Waste Category", wasteCategories, selectedCategory, (val) {
                 setState(() => selectedCategory = val);
               }),
@@ -113,7 +108,6 @@ class _EditProfileBusinessPageState extends State<EditProfileBusinessPage> {
     );
   }
 
-  // Dropdown Builder
   Widget _buildDropdownField(String hint, List<String> items, String? currentVal, ValueChanged<String?> onChanged) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -137,14 +131,11 @@ class _EditProfileBusinessPageState extends State<EditProfileBusinessPage> {
   }
 }
 
-// Reusable Text Field
 class _BusinessField extends StatelessWidget {
   final String hint;
   final bool isWhite;
   final bool isPhone;
-
   const _BusinessField({required this.hint, required this.isWhite, this.isPhone = false});
-
   @override
   Widget build(BuildContext context) {
     return Padding(

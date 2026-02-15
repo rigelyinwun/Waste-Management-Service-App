@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'login.dart'; // Import your real LoginPage here
+import 'login.dart';
 
 class IndividualSignUpPage extends StatelessWidget {
   const IndividualSignUpPage({super.key});
-
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFB7D7C0), // Mint Background
+      backgroundColor: const Color(0xFFB7D7C0),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -41,7 +40,6 @@ class IndividualSignUpPage extends StatelessWidget {
               ],
             ),
 
-            // --- FORM CONTENT ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Column(
@@ -64,7 +62,6 @@ class IndividualSignUpPage extends StatelessWidget {
                   _buildField("CONFIRM PASSWORD"),
                   const SizedBox(height: 30),
 
-                  // --- REGISTER BUTTON ---
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1B3022),
@@ -74,7 +71,6 @@ class IndividualSignUpPage extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      // Navigate to your real LoginPage
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -100,7 +96,6 @@ class IndividualSignUpPage extends StatelessWidget {
     );
   }
 
-  // --- REUSABLE FIELD WIDGET ---
   Widget _buildField(String label, {bool isDropdown = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -139,7 +134,6 @@ class IndividualSignUpPage extends StatelessWidget {
     );
   }
 
-  // --- GOOGLE SIGN-IN BUTTON ---
   Widget _buildGoogleBtn(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -169,9 +163,6 @@ class IndividualSignUpPage extends StatelessWidget {
   }
 }
 
-// =====================
-// SYNTHETIC CURVE CLIPPER
-// =====================
 class SyntheticCurveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

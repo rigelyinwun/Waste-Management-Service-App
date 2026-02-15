@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 
-// =============================================================================
-// SECTION 1: STYLE DEFINITIONS
-// =============================================================================
 class PrivacyStyles {
   static const Color headerTeal = Color(0xFF387664);
-  static const Color backgroundMint = Color(0xFFE8F3ED);
+  static const Color backgroundMint = Color(0xFFD3E6DB);
   static const String fontMain = 'LexendExa';
 }
 
-// =============================================================================
-// SECTION 2: THE PRIVACY POLICY PAGE
-// =============================================================================
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
 
@@ -19,29 +13,21 @@ class PrivacyPolicyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: PrivacyStyles.backgroundMint,
-      // --- Teal Header matching your design ---
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          color: PrivacyStyles.headerTeal,
-          padding: const EdgeInsets.only(top: 40, left: 10),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const Text(
-                "Privacy Policy",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: PrivacyStyles.fontMain,
-                ),
-              ),
-            ],
+      appBar: AppBar(
+        backgroundColor: PrivacyStyles.headerTeal,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Privacy Policy",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            fontFamily: PrivacyStyles.fontMain,
           ),
         ),
       ),
@@ -56,6 +42,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
                 fontFamily: PrivacyStyles.fontMain,
+                color: PrivacyStyles.headerTeal,
               ),
             ),
             const SizedBox(height: 15),
@@ -101,7 +88,11 @@ class PrivacyPolicyPage extends StatelessWidget {
       padding: const EdgeInsets.only(top: 15, bottom: 5),
       child: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          color: PrivacyStyles.headerTeal,
+        ),
       ),
     );
   }
@@ -109,7 +100,7 @@ class PrivacyPolicyPage extends StatelessWidget {
   Widget _buildSectionBody(String text) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 11, color: Colors.black87, height: 1.4),
+      style: const TextStyle(fontSize: 12, color: Colors.black87, height: 1.4),
     );
   }
 
@@ -119,11 +110,11 @@ class PrivacyPolicyPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("• ", style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text("• ", style: TextStyle(fontWeight: FontWeight.bold, color: PrivacyStyles.headerTeal)),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 11, color: Colors.black87, height: 1.4),
+              style: const TextStyle(fontSize: 12, color: Colors.black87, height: 1.4),
             ),
           ),
         ],

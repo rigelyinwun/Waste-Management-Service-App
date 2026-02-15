@@ -1,47 +1,100 @@
 import 'package:flutter/material.dart';
 
-// =============================================================================
-// SECTION 1: STYLE DEFINITIONS
-// =============================================================================
 class ProfileStyles {
   static const Color headerTeal = Color(0xFF387664);
-  static const Color backgroundMint = Color(0xFFE8F3ED);
+  static const Color backgroundMint = Color(0xFFD3E6DB);
   static const Color editBtnGreen = Color(0xFF4FD195);
   static const Color textBlack = Color(0xFF1A1A1A);
   static const String font = 'LexendExa';
 }
 
-// =============================================================================
-// SECTION 2: THE PROFILE PAGE (Content Only)
-// =============================================================================
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
+  PreferredSizeWidget _buildAppBar(String title) => AppBar(
+    backgroundColor: ProfileStyles.headerTeal,
+    elevation: 0,
+    centerTitle: true,
+    automaticallyImplyLeading: false,
+    title: Text(
+      title,
+      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    ),
+  );
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 15),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF007AFF),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(5)),
+                ),
+                child: const Text(
+                  "Confirmation Box",
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Icon(Icons.error_outline, size: 80, color: Colors.grey),
+            ],
+          ),
+          titlePadding: EdgeInsets.zero,
+          content: const Text(
+            "Are you sure you want to\nlog out?",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.grey),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _dialogButton("Yes", () => Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false)),
+                  const SizedBox(width: 20),
+                  _dialogButton("No", () => Navigator.pop(context)),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _dialogButton(String text, VoidCallback onTap) => SizedBox(
+    width: 100,
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFB0B0B0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      onPressed: onTap,
+      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
-    // Removed Scaffold, AppBar, and BottomNav because MainBasePage provides them.
-    return Container(
-      color: ProfileStyles.backgroundMint,
-      child: SingleChildScrollView(
+    return Scaffold(
+      backgroundColor: ProfileStyles.backgroundMint,
+      appBar: _buildAppBar("My Profile"),
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Title (Replaces the AppBar text)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(25, 30, 25, 10),
-              child: Text(
-                "My Profile",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: ProfileStyles.headerTeal,
-                ),
-              ),
-            ),
+            const SizedBox(height: 30),
 
-            const SizedBox(height: 20),
-
-            // Profile Header Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25),
               child: Row(
@@ -57,45 +110,29 @@ class ProfilePage extends StatelessWidget {
                     child: const Icon(Icons.person, size: 50, color: Colors.white),
                   ),
                   const SizedBox(width: 20),
-                  // User Details
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           "Kingstom",
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                         ),
                         Text(
                           "kingstom@gmail.com",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
+                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                         ),
                         const SizedBox(height: 10),
-                        // Edit Profile Button
                         SizedBox(
                           height: 35,
                           child: ElevatedButton(
-                            onPressed: () {
-                              // Link to your edit profile route
-                              Navigator.pushNamed(context, '/individual_editprofile');
-                            },
+                            onPressed: () => Navigator.pushNamed(context, '/individual_editprofile'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: ProfileStyles.editBtnGreen,
                               elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text(
-                              "Edit Profile",
-                              style: TextStyle(color: Colors.white, fontSize: 12),
-                            ),
+                            child: const Text("Edit Profile", style: TextStyle(color: Colors.white, fontSize: 12)),
                           ),
                         ),
                       ],
@@ -108,28 +145,18 @@ class ProfilePage extends StatelessWidget {
             const SizedBox(height: 40),
             const Padding(
               padding: EdgeInsets.only(left: 25),
-              child: Text(
-                "General Settings",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text("General Settings", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 10),
 
-            // --- Settings List ---
+            // Settings List
             const SettingsTile(
               icon: Icons.wb_sunny_outlined,
               title: "Mode",
               subtitle: "Dark & Light",
               hasSwitch: true,
             ),
-            SettingsTile(
-              icon: Icons.language,
-              title: "Language",
-              onTap: () {},
-            ),
+            SettingsTile(icon: Icons.language, title: "Language", onTap: () {}),
             SettingsTile(
               icon: Icons.history_edu,
               title: "History Report",
@@ -145,16 +172,18 @@ class ProfilePage extends StatelessWidget {
               title: "Privacy Policy",
               onTap: () => Navigator.pushNamed(context, '/privatepolicy'),
             ),
-            const SettingsTile(icon: Icons.stars_outlined, title: "Rate This App"),
-
-            // Logout Option
+            SettingsTile(
+              icon: Icons.star_outline,
+              title: "Rating This App",
+              onTap: () => Navigator.pushNamed(context, '/rating'),
+            ),
             SettingsTile(
               icon: Icons.logout,
               title: "Logout",
-              onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+              onTap: () => _showLogoutDialog(context),
             ),
 
-            const SizedBox(height: 100), // Extra padding for bottom nav
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -162,9 +191,6 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// SECTION 3: REUSABLE SETTINGS TILE
-// =============================================================================
 class SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
