@@ -173,7 +173,6 @@ class LoginPage extends StatelessWidget {
               ],
             ),
 
-            // Form Area
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Column(

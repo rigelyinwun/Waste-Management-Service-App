@@ -96,8 +96,6 @@ class PrivacyPolicyPage extends StatelessWidget {
     );
   }
 
-  // --- UI Helpers ---
-
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(top: 15, bottom: 5),

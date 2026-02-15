@@ -28,7 +28,6 @@ class _EditProfileBusinessPageState extends State<EditProfileBusinessPage> {
   String? selectedCategory;
   String? selectedArea;
 
-  // Mock data lists
   final List<String> wasteCategories = ["Fabric", "Furniture", "Metal", "Plastic", "Electronic"];
   final List<String> serviceAreas = ["Kuala Lumpur", "Johor Bahru", "Penang", "Melaka", "Ipoh"];
 

@@ -353,7 +353,6 @@ class BusinessSignUpPage extends StatelessWidget {
   }
 }
 
-// --- CLIPPER ---
 class SyntheticCurveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

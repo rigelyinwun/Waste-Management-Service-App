@@ -13,7 +13,6 @@ class IndividualSignUpPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // --- HEADER: LEFT HIGH, RIGHT LOW ---
             Stack(
               children: [
                 ClipPath(

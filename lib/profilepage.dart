@@ -54,12 +54,10 @@ class ProfilePage extends StatelessWidget {
           children: [
             const SizedBox(height: 30),
 
-            // --- User Info Section ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25),
               child: Row(
                 children: [
-                  // Circular Profile Placeholder
                   Container(
                     width: 100,
                     height: 100,

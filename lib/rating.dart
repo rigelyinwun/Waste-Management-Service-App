@@ -69,11 +69,9 @@ class _RatingPageState extends State<RatingPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // --- Rocket Illustration ---
                 const Text("🚀", style: TextStyle(fontSize: 60)), // Simplified for code, replace with Image if needed
                 const SizedBox(height: 20),
 
-                // --- Heading ---
                 const Text(
                   "Enjoying the App?",
                   textAlign: TextAlign.center,
@@ -86,7 +84,6 @@ class _RatingPageState extends State<RatingPage> {
                 ),
                 const SizedBox(height: 10),
 
-                // --- Subtext ---
                 const Text(
                   "Your feedback helps us create a cleaner environmental",
                   textAlign: TextAlign.center,

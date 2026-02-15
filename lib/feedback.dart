@@ -100,7 +100,6 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     ),
                     const SizedBox(height: 30),
 
-                    // --- Interactive Star Rating Row ---
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: List.generate(5, (index) {

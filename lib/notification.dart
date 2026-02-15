@@ -20,7 +20,6 @@ class NotificationPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: NotifStyles.backgroundMint,
-      // --- Teal Header ---
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: Container(
@@ -51,7 +50,6 @@ class NotificationPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- SECTION: PREVIOUSLY ---
             _buildSectionTitle("Previously"),
             const _NotificationCard(
               title: "Collection Success!",

@@ -155,10 +155,7 @@ class SyntheticCurveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
-    // Left High (50% of header height)
     path.lineTo(0, size.height * 0.5);
-
-    // Smooth single curve dipping to Right Low (85% of header height)
     var controlPoint = Offset(size.width * 0.45, size.height * 1.0);
     var endPoint = Offset(size.width, size.height * 0.85);
 

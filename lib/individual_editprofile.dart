@@ -92,7 +92,6 @@ class EditProfileIndividualPage extends StatelessWidget {
               const Text("Your Information", style: EditProfileStyles.sectionTitleStyle),
               const SizedBox(height: 25),
 
-              // --- Input Fields ---
               const _EditInfoField(hint: "Username", isWhite: true),
               const _EditInfoField(hint: "kingstom@gmail.com", isWhite: false), // Non-editable
               const _EditInfoField(hint: "123 1232", isWhite: true, isPhone: true),
