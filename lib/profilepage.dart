@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 // =============================================================================
-// SECTION 1: STYLE DEFINITIONS (Matching your design palette)
+// SECTION 1: STYLE DEFINITIONS
 // =============================================================================
 class ProfileStyles {
   static const Color headerTeal = Color(0xFF387664);
@@ -12,59 +12,49 @@ class ProfileStyles {
 }
 
 // =============================================================================
-// SECTION 2: THE PROFILE PAGE
+// SECTION 2: THE PROFILE PAGE (Content Only)
 // =============================================================================
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ProfileStyles.backgroundMint,
-      // --- Custom Teal Header ---
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          color: ProfileStyles.headerTeal,
-          padding: const EdgeInsets.only(top: 40, left: 20),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const Text(
-                "My Profile",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: ProfileStyles.font,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-
-      body: SingleChildScrollView(
+    // Removed Scaffold, AppBar, and BottomNav because MainBasePage provides them.
+    return Container(
+      color: ProfileStyles.backgroundMint,
+      child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 30),
+            // Header Title (Replaces the AppBar text)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(25, 30, 25, 10),
+              child: Text(
+                "My Profile",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: ProfileStyles.headerTeal,
+                ),
+              ),
+            ),
 
+            const SizedBox(height: 20),
+
+            // Profile Header Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25),
               child: Row(
                 children: [
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade300,
                       shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
                     ),
+                    child: const Icon(Icons.person, size: 50, color: Colors.white),
                   ),
                   const SizedBox(width: 20),
                   // User Details
@@ -75,31 +65,37 @@ class ProfilePage extends StatelessWidget {
                         const Text(
                           "Kingstom",
                           style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: ProfileStyles.font,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
                           "kingstom@gmail.com",
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
                           ),
                         ),
                         const SizedBox(height: 10),
                         // Edit Profile Button
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ProfileStyles.editBtnGreen,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        SizedBox(
+                          height: 35,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Link to your edit profile route
+                              Navigator.pushNamed(context, '/individual_editprofile');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ProfileStyles.editBtnGreen,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                          ),
-                          child: const Text(
-                            "Edit Profile",
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            child: const Text(
+                              "Edit Profile",
+                              style: TextStyle(color: Colors.white, fontSize: 12),
+                            ),
                           ),
                         ),
                       ],
@@ -115,13 +111,12 @@ class ProfilePage extends StatelessWidget {
               child: Text(
                 "General Settings",
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  fontFamily: ProfileStyles.font,
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
             // --- Settings List ---
             const SettingsTile(
@@ -130,30 +125,38 @@ class ProfilePage extends StatelessWidget {
               subtitle: "Dark & Light",
               hasSwitch: true,
             ),
-            const SettingsTile(icon: Icons.language, title: "Language"),
-            const SettingsTile(icon: Icons.history_edu, title: "History Report"),
-            const SettingsTile(icon: Icons.book_outlined, title: "Terms & Conditions"),
-            const SettingsTile(icon: Icons.lock_outline, title: "Privacy Policy"),
+            SettingsTile(
+              icon: Icons.language,
+              title: "Language",
+              onTap: () {},
+            ),
+            SettingsTile(
+              icon: Icons.history_edu,
+              title: "History Report",
+              onTap: () => Navigator.pushNamed(context, '/historyreport'),
+            ),
+            SettingsTile(
+              icon: Icons.book_outlined,
+              title: "Terms & Conditions",
+              onTap: () => Navigator.pushNamed(context, '/tnc'),
+            ),
+            SettingsTile(
+              icon: Icons.lock_outline,
+              title: "Privacy Policy",
+              onTap: () => Navigator.pushNamed(context, '/privatepolicy'),
+            ),
             const SettingsTile(icon: Icons.stars_outlined, title: "Rate This App"),
 
-            const SizedBox(height: 50),
+            // Logout Option
+            SettingsTile(
+              icon: Icons.logout,
+              title: "Logout",
+              onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+            ),
+
+            const SizedBox(height: 100), // Extra padding for bottom nav
           ],
         ),
-      ),
-
-      // Reuse your existing Bottom Bar here
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: 4, // Profile tab active
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
-        ],
       ),
     );
   }
@@ -167,6 +170,7 @@ class SettingsTile extends StatelessWidget {
   final String title;
   final String? subtitle;
   final bool hasSwitch;
+  final VoidCallback? onTap;
 
   const SettingsTile({
     super.key,
@@ -174,24 +178,25 @@ class SettingsTile extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.hasSwitch = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 5),
-      leading: Icon(icon, color: Colors.black, size: 28),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 2),
+      leading: Icon(icon, color: ProfileStyles.headerTeal, size: 26),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
       ),
       subtitle: subtitle != null
-          ? Text(subtitle!, style: TextStyle(color: Colors.pink.shade100, fontSize: 12))
+          ? Text(subtitle!, style: TextStyle(color: Colors.green.shade700, fontSize: 11))
           : null,
       trailing: hasSwitch
-          ? Switch(value: false, onChanged: (v) {}, activeColor: Colors.black)
-          : const Icon(Icons.arrow_forward, color: Colors.black),
-      onTap: () {},
+          ? Switch(value: false, onChanged: (v) {}, activeColor: ProfileStyles.headerTeal)
+          : const Icon(Icons.arrow_forward_ios, color: Colors.black26, size: 16),
+      onTap: onTap,
     );
   }
 }
