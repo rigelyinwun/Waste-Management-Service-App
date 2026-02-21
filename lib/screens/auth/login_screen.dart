@@ -125,6 +125,15 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 ElevatedButton(onPressed: editUserInfo, child: Text('Edit Info')),
                 SizedBox(width: 10),
+
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/report');
+                  },
+                  child: Text('Report'),
+                ),
+
+                SizedBox(width: 10),
                 ElevatedButton(onPressed: signOutUser, child: Text('Sign Out')),
               ],
             ),

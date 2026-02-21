@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/admin/admin_home.dart';
+import 'screens/user/report.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -23,6 +24,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (_) => LoginScreen(),
         '/register': (_) => RegisterScreen(),
+        '/report': (_) => ReportTestScreen(),
       },
       home: AuthWrapper(),
     );
@@ -42,9 +44,9 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        if (snapshot.hasData) {
-          return HomeScreen();
-        }
+        // if (snapshot.hasData) {
+        //   return HomeScreen();
+        // }
 
         return LoginScreen();
       },
