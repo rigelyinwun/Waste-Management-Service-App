@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
 
-class IndividualSignUpPage extends StatelessWidget {
+class IndividualSignUpPage extends StatefulWidget {
   const IndividualSignUpPage({super.key});
+
+  @override
+  State<IndividualSignUpPage> createState() => _IndividualSignUpPageState();
+}
+
+class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
+  String? _selectedLocation;
+  final List<String> _locations = [
+    "Kuala Lumpur",
+    "Selangor",
+    "Johor",
+    "Penang",
+    "Melaka",
+    "Sabah",
+    "Sarawak"
+  ];
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -38,7 +55,6 @@ class IndividualSignUpPage extends StatelessWidget {
                 ),
               ],
             ),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Column(
@@ -56,11 +72,12 @@ class IndividualSignUpPage extends StatelessWidget {
                   _buildField("FULL NAME"),
                   _buildField("EMAIL ADDRESS"),
                   _buildField("PHONE NUMBER"),
-                  _buildField("LOCATION/CITY", isDropdown: true),
-                  _buildField("PASSWORD"),
-                  _buildField("CONFIRM PASSWORD"),
+                  _buildDropdown("LOCATION/CITY", _locations, _selectedLocation, (val) {
+                    setState(() => _selectedLocation = val);
+                  }),
+                  _buildField("PASSWORD", isObscure: true),
+                  _buildField("CONFIRM PASSWORD", isObscure: true),
                   const SizedBox(height: 30),
-
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1B3022),
@@ -72,8 +89,7 @@ class IndividualSignUpPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => const LoginPage()),
+                        MaterialPageRoute(builder: (context) => const LoginPage()),
                       );
                     },
                     child: const Text(
@@ -85,6 +101,36 @@ class IndividualSignUpPage extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 25),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Already have an account? ",
+                        style: TextStyle(
+                          color: Color(0xFF2E6153),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const LoginPage()),
+                          );
+                        },
+                        child: const Text(
+                          "Log In here",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2E6153),
+                            fontSize: 16,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 50),
                 ],
               ),
@@ -95,7 +141,7 @@ class IndividualSignUpPage extends StatelessWidget {
     );
   }
 
-  Widget _buildField(String label, {bool isDropdown = false}) {
+  Widget _buildField(String label, {bool isObscure = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Column(
@@ -113,19 +159,52 @@ class IndividualSignUpPage extends StatelessWidget {
             ),
           ),
           TextField(
+            obscureText: isObscure,
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFF8BC9A8),
-              contentPadding:
-              const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(40),
                 borderSide: BorderSide.none,
               ),
-              suffixIcon: isDropdown
-                  ? const Icon(Icons.arrow_drop_down,
-                  color: Colors.black, size: 30)
-                  : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String label, List<String> items, String? selectedValue, ValueChanged<String?> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 15, bottom: 5),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2E6153),
+              ),
+            ),
+          ),
+          DropdownButtonFormField<String>(
+            value: selectedValue,
+            items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+            onChanged: onChanged,
+            icon: const Icon(Icons.arrow_drop_down, color: Colors.black, size: 30),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFF8BC9A8),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(40),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ],
@@ -153,7 +232,7 @@ class IndividualSignUpPage extends StatelessWidget {
           children: const [
             Icon(Icons.g_mobiledata, color: Colors.red, size: 28),
             SizedBox(width: 5),
-            Text("Signin with Google",
+            const Text("Signin with Google",
                 style: TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),

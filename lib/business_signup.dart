@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
 
-class BusinessSignUpPage extends StatelessWidget {
+class BusinessSignUpPage extends StatefulWidget {
   const BusinessSignUpPage({super.key});
+
+  @override
+  State<BusinessSignUpPage> createState() => _BusinessSignUpPageState();
+}
+
+class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
+  String? _selectedCategory;
+  String? _selectedArea;
+
+  final List<String> _categories = ["Metal", "Paper", "Plastic", "Glass", "E-Waste", "Fabric"];
+  final List<String> _areas = ["Kuala Lumpur", "Selangor", "Johor", "Penang", "Melaka", "Other"];
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: const Color(0xFFB7D7C0),
       body: SingleChildScrollView(
@@ -31,73 +44,46 @@ class BusinessSignUpPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 15),
-                        GestureDetector(
-                          onTap: () {
-                            print("Triggering Google Sign-In...");
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(25),
-                              border: Border.all(color: Colors.black12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
-                                )
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Image.network(
-                                  'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
-                                  height: 20,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.account_circle, color: Colors.red),
-                                ),
-                                const SizedBox(width: 10),
-                                const Text(
-                                  "Sign in with Google",
-                                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        _buildGoogleBtn(context),
                       ],
                     ),
                   ),
                 ),
               ],
             ),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Column(
                 children: [
                   const Text(
-                    "Already registered?\nLog in here",
+                    "Business Account",
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2E6153)),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E6153),
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 30),
                   _buildField("COMPANY NAME"),
                   _buildField("COMPANY REGISTRATION (SSM)"),
                   _buildField("BUSINESS EMAIL ADDRESS"),
-                  _buildField("Waste Category:", isDropdown: true),
-                  _buildField("Service Area", isDropdown: true),
-                  _buildField("PASSWORD"),
-                  _buildField("Confirm Password"),
+                  _buildDropdown("WASTE CATEGORY:", _categories, _selectedCategory, (val) {
+                    setState(() => _selectedCategory = val);
+                  }),
+                  _buildDropdown("SERVICE AERA", _areas, _selectedArea, (val) {
+                    setState(() => _selectedArea = val);
+                  }),
+                  _buildField("PASSWORD", isObscure: true),
+                  _buildField("CONFIRM PASSWORD", isObscure: true),
                   const SizedBox(height: 30),
-
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1B3022),
                       minimumSize: const Size(240, 55),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () {
                       Navigator.push(
@@ -106,9 +92,43 @@ class BusinessSignUpPage extends StatelessWidget {
                       );
                     },
                     child: const Text(
-                      "Log In",
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                      "Register",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                  ),
+                  const SizedBox(height: 25),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Already registered? ",
+                        style: TextStyle(
+                          color: Color(0xFF2E6153),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const LoginPage()),
+                          );
+                        },
+                        child: const Text(
+                          "Log In here",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2E6153),
+                            fontSize: 16,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 50),
                 ],
@@ -120,7 +140,7 @@ class BusinessSignUpPage extends StatelessWidget {
     );
   }
 
-  Widget _buildField(String label, {bool isDropdown = false}) {
+  Widget _buildField(String label, {bool isObscure = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Column(
@@ -130,19 +150,95 @@ class BusinessSignUpPage extends StatelessWidget {
             padding: const EdgeInsets.only(left: 15, bottom: 5),
             child: Text(
               label,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2E6153)),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2E6153),
+              ),
             ),
           ),
           TextField(
+            obscureText: isObscure,
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFF8BC9A8),
               contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(40), borderSide: BorderSide.none),
-              suffixIcon: isDropdown ? const Icon(Icons.arrow_drop_down, color: Colors.black, size: 30) : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(40),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String label, List<String> items, String? selectedValue, ValueChanged<String?> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 15, bottom: 5),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2E6153),
+              ),
+            ),
+          ),
+          DropdownButtonFormField<String>(
+            value: selectedValue,
+            items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+            onChanged: onChanged,
+            icon: const Icon(Icons.arrow_drop_down, color: Colors.black, size: 30),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFF8BC9A8),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(40),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGoogleBtn(BuildContext context) {
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.black12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            )
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.g_mobiledata, color: Colors.red, size: 30),
+            SizedBox(width: 8),
+            Text(
+              "Sign in with Google",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ],
+        ),
       ),
     );
   }
