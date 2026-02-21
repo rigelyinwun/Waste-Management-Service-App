@@ -24,10 +24,8 @@ class EditProfileBusinessPage extends StatefulWidget {
 class _EditProfileBusinessPageState extends State<EditProfileBusinessPage> {
   String? selectedCategory;
   String? selectedArea;
-
   final List<String> wasteCategories = ["Fabric", "Furniture", "Metal", "Plastic", "Electronic"];
   final List<String> serviceAreas = ["Kuala Lumpur", "Johor Bahru", "Penang", "Melaka", "Ipoh"];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -6,7 +6,6 @@ class TNCPage extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color headerTeal = Color(0xFF387664);
     const Color backgroundMint = Color(0xFFD3E6DB);
-
     return Scaffold(
       backgroundColor: backgroundMint,
       appBar: AppBar(

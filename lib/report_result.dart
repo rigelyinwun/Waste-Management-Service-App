@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 class ReportResultPage extends StatelessWidget {
   const ReportResultPage({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

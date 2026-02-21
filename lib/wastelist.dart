@@ -18,7 +18,6 @@ class _WasteListPageState extends State<WasteListPage> {
       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
     ),
   );
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

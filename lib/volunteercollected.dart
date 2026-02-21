@@ -32,7 +32,6 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF387664)),
             ),
             const SizedBox(height: 20),
-            // Example of using the dynamic report data
             _detailRow("Category:", widget.report?.toString() ?? "N/A"),
             const SizedBox(height: 10),
             const Text(

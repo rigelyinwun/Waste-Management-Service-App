@@ -83,7 +83,6 @@ class ProfilePage extends StatelessWidget {
       child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
     ),
   );
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

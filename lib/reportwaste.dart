@@ -9,7 +9,6 @@ class ReportPage extends StatefulWidget {
 class _ReportPageState extends State<ReportPage> {
   int currentStep = 0;
   bool isPublic = true;
-
   @override
   Widget build(BuildContext context) {
     if (currentStep == 0) return _buildInitialForm();

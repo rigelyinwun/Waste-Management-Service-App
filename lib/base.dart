@@ -19,7 +19,6 @@ class _MainBasePageState extends State<MainBasePage> {
     const Center(child: Text("Map Page")),
     const ProfilePage(),
   ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

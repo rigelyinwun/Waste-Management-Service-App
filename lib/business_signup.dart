@@ -6,7 +6,6 @@ class BusinessSignUpPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: const Color(0xFFB7D7C0),
       body: SingleChildScrollView(

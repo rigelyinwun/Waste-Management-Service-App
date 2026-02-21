@@ -16,7 +16,6 @@ class FeedbackPage extends StatefulWidget {
 
 class _FeedbackPageState extends State<FeedbackPage> {
   int selectedStars = 0;
-
   PreferredSizeWidget _buildAppBar(String title) => AppBar(
     backgroundColor: FeedbackStyles.headerTeal,
     elevation: 0,
@@ -27,7 +26,6 @@ class _FeedbackPageState extends State<FeedbackPage> {
       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
     ),
   );
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

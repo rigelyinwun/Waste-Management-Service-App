@@ -6,7 +6,6 @@ import 'homepage.dart';
 import 'historyreport.dart';
 import 'notification.dart';
 import 'profilepage.dart';
-import 'volunteercollected.dart';
 import 'login.dart';
 import 'signup.dart';
 import 'tnc.dart';
@@ -21,6 +20,7 @@ import 'reportwaste.dart';
 import 'successpage.dart';
 import 'report_result.dart';
 import 'wastelist.dart';
+import 'volunteercollected.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

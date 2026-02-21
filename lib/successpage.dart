@@ -4,6 +4,7 @@ class SubmissionSuccessPage extends StatelessWidget {
   const SubmissionSuccessPage({super.key});
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: const Color(0xFFD3E6DB),
       appBar: AppBar(

@@ -152,14 +152,11 @@ class SyntheticCurveClipper extends CustomClipper<Path> {
     path.lineTo(0, size.height * 0.5);
     var controlPoint = Offset(size.width * 0.45, size.height * 1.0);
     var endPoint = Offset(size.width, size.height * 0.85);
-
     path.quadraticBezierTo(controlPoint.dx, controlPoint.dy, endPoint.dx, endPoint.dy);
-
     path.lineTo(size.width, 0);
     path.close();
     return path;
   }
-
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => true;
 }

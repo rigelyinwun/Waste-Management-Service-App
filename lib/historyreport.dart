@@ -32,7 +32,6 @@ class HistoryReportPage extends StatefulWidget {
 
 class _HistoryReportPageState extends State<HistoryReportPage> {
   String selectedFilter = "All";
-
   final List<WasteReport> reports = [
     WasteReport(
       category: "Metal",
@@ -89,12 +88,11 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFD3E6DB),
-      // --- HEADER UPDATED: CENTERED WHITE TEXT AND WHITE ARROW ---
       appBar: AppBar(
         backgroundColor: const Color(0xFF387664),
         elevation: 0,
-        centerTitle: true, // Centers the title
-        iconTheme: const IconThemeData(color: Colors.white), // Makes the back arrow white
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "History Report",
           style: TextStyle(
