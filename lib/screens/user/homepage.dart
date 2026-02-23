@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../services/report_service.dart';
 import '../../models/report_model.dart';
@@ -245,8 +246,44 @@ class DisposeActionBox extends StatelessWidget {
   }
 }
 
-class RealWasteMap extends StatelessWidget {
+class RealWasteMap extends StatefulWidget {
   const RealWasteMap({super.key});
+
+  @override
+  State<RealWasteMap> createState() => _RealWasteMapState();
+}
+
+class _RealWasteMapState extends State<RealWasteMap> {
+  final Set<Marker> _markers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMarkers();
+  }
+
+  Future<void> _loadMarkers() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('reports').get();
+
+    final markers = snapshot.docs.map((doc) {
+      final data = doc.data();
+      final GeoPoint location = data['location'];
+
+      return Marker(
+        markerId: MarkerId(doc.id),
+        position: LatLng(location.latitude, location.longitude),
+        infoWindow: InfoWindow(
+          title: data['description'],
+        ),
+      );
+    }).toSet();
+
+    setState(() {
+      _markers.addAll(markers);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -258,9 +295,12 @@ class RealWasteMap extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(26),
-        child: const GoogleMap(
-          initialCameraPosition:
-              CameraPosition(target: LatLng(3.1390, 101.6869), zoom: 14),
+        child: GoogleMap(
+          initialCameraPosition: const CameraPosition(
+            target: LatLng(3.1390, 101.6869), // Kuala Lumpur
+            zoom: 14,
+          ),
+          markers: _markers,
           zoomControlsEnabled: false,
           myLocationButtonEnabled: false,
         ),
