@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
+import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
+import '../../models/user_model.dart';
 
 class BusinessSignUpPage extends StatefulWidget {
   const BusinessSignUpPage({super.key});
@@ -9,11 +12,99 @@ class BusinessSignUpPage extends StatefulWidget {
 }
 
 class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
+  final TextEditingController _companyNameController = TextEditingController();
+  final TextEditingController _ssmController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
+  bool _isLoading = false;
+
   String? _selectedCategory;
   String? _selectedArea;
 
-  final List<String> _categories = ["Metal", "Paper", "Plastic", "Glass", "E-Waste", "Fabric"];
-  final List<String> _areas = ["Kuala Lumpur", "Selangor", "Johor", "Penang", "Melaka", "Other"];
+  final List<String> _categories = [
+    "Metal",
+    "Paper",
+    "Plastic",
+    "Glass",
+    "E-Waste",
+    "Fabric"
+  ];
+  final List<String> _areas = [
+    "Kuala Lumpur",
+    "Selangor",
+    "Johor",
+    "Penang",
+    "Melaka",
+    "Other"
+  ];
+
+  Future<void> _handleRegister() async {
+    final companyName = _companyNameController.text.trim();
+    final ssm = _ssmController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (companyName.isEmpty ||
+        ssm.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        _selectedCategory == null ||
+        _selectedArea == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in all fields")),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Passwords do not match")),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final userCredential = await _authService.registerWithEmail(
+          email: email, password: password);
+
+      final newUser = AppUser(
+        uid: userCredential.user!.uid,
+        role: 'company',
+        email: email,
+        companyName: companyName,
+        companySSM: ssm,
+        wasteCategories: [_selectedCategory!],
+        serviceAreas: [_selectedArea!],
+      );
+
+      await _userService.createUserProfile(newUser);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Registration successful!")),
+        );
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Registration failed: ${e.toString()}")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,17 +156,19 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  _buildField("COMPANY NAME"),
-                  _buildField("COMPANY REGISTRATION (SSM)"),
-                  _buildField("BUSINESS EMAIL ADDRESS"),
-                  _buildDropdown("WASTE CATEGORY:", _categories, _selectedCategory, (val) {
+                  _buildField("COMPANY NAME", _companyNameController),
+                  _buildField("COMPANY REGISTRATION (SSM)", _ssmController),
+                  _buildField("BUSINESS EMAIL ADDRESS", _emailController),
+                  _buildDropdown(
+                      "WASTE CATEGORY:", _categories, _selectedCategory, (val) {
                     setState(() => _selectedCategory = val);
                   }),
-                  _buildDropdown("SERVICE AERA", _areas, _selectedArea, (val) {
+                  _buildDropdown("SERVICE AREA", _areas, _selectedArea, (val) {
                     setState(() => _selectedArea = val);
                   }),
-                  _buildField("PASSWORD", isObscure: true),
-                  _buildField("CONFIRM PASSWORD", isObscure: true),
+                  _buildField("PASSWORD", _passwordController, isObscure: true),
+                  _buildField("CONFIRM PASSWORD", _confirmPasswordController,
+                      isObscure: true),
                   const SizedBox(height: 30),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -85,20 +178,17 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const LoginPage()),
-                      );
-                    },
-                    child: const Text(
-                      "Register",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    onPressed: _isLoading ? null : _handleRegister,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            "Register",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 25),
                   Row(
@@ -113,10 +203,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const LoginPage()),
-                          );
+                          Navigator.pushReplacementNamed(context, '/login');
                         },
                         child: const Text(
                           "Log In here",
@@ -140,7 +227,8 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
     );
   }
 
-  Widget _buildField(String label, {bool isObscure = false}) {
+  Widget _buildField(String label, TextEditingController controller,
+      {bool isObscure = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Column(
@@ -158,11 +246,13 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
             ),
           ),
           TextField(
+            controller: controller,
             obscureText: isObscure,
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFF8BC9A8),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(40),
                 borderSide: BorderSide.none,
@@ -174,7 +264,8 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
     );
   }
 
-  Widget _buildDropdown(String label, List<String> items, String? selectedValue, ValueChanged<String?> onChanged) {
+  Widget _buildDropdown(String label, List<String> items, String? selectedValue,
+      ValueChanged<String?> onChanged) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Column(
@@ -193,13 +284,17 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
           ),
           DropdownButtonFormField<String>(
             value: selectedValue,
-            items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+            items: items
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
             onChanged: onChanged,
-            icon: const Icon(Icons.arrow_drop_down, color: Colors.black, size: 30),
+            icon:
+                const Icon(Icons.arrow_drop_down, color: Colors.black, size: 30),
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFF8BC9A8),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(40),
                 borderSide: BorderSide.none,
@@ -251,7 +346,8 @@ class SyntheticCurveClipper extends CustomClipper<Path> {
     path.lineTo(0, size.height * 0.55);
     var controlPoint = Offset(size.width * 0.45, size.height * 1.1);
     var endPoint = Offset(size.width, size.height * 0.90);
-    path.quadraticBezierTo(controlPoint.dx, controlPoint.dy, endPoint.dx, endPoint.dy);
+    path.quadraticBezierTo(
+        controlPoint.dx, controlPoint.dy, endPoint.dx, endPoint.dy);
     path.lineTo(size.width, 0);
     path.close();
     return path;
