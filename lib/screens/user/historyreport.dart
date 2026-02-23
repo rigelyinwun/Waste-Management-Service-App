@@ -59,6 +59,16 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
                 : StreamBuilder<List<Report>>(
                     stream: _reportService.getReportsByUser(user.uid),
                     builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        print("Report stream error: ${snapshot.error}");
+                        return Center(
+                          child: Text("Error loading reports: ${snapshot.error}"),
+                        );
+                      }
+
+                      print(
+                          "Report stream snapshot: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, data length: ${snapshot.data?.length}");
+
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       }

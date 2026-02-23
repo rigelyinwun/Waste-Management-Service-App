@@ -25,11 +25,11 @@ class AIAnalysis {
 
   factory AIAnalysis.fromMap(Map<String, dynamic> map) {
     return AIAnalysis(
-      category: map['category'],
-      estimatedWeightKg: (map['estimatedWeightKg'] as num).toDouble(),
-      recommendedTransport: map['recommendedTransport'],
-      estimatedCost: (map['estimatedCost'] as num).toDouble(),
-      hazardLevel: map['hazardLevel'],
+      category: map['category'] ?? 'Unknown',
+      estimatedWeightKg: (map['estimatedWeightKg'] as num?)?.toDouble() ?? 0.0,
+      recommendedTransport: map['recommendedTransport'] ?? 'N/A',
+      estimatedCost: (map['estimatedCost'] as num?)?.toDouble() ?? 0.0,
+      hazardLevel: map['hazardLevel'] ?? 'Low',
     );
   }
 }

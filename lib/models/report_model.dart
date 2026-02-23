@@ -41,14 +41,14 @@ class Report {
   }
 
   factory Report.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>? ?? {};
 
     return Report(
       reportId: doc.id,
-      userId: data['userId'],
+      userId: data['userId'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
       description: data['description'] ?? '',
-      location: data['location'],
+      location: data['location'] ?? const GeoPoint(0, 0),
       status: data['status'] ?? 'pending',
       aiAnalysis: data['aiAnalysis'] != null
           ? AIAnalysis.fromMap(data['aiAnalysis'])
