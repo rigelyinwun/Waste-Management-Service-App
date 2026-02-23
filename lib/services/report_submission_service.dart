@@ -29,6 +29,7 @@ class ReportSubmissionService {
     required String description,
     required Uint8List imageBytes,
     required GeoPoint location,
+    bool isPublic = false,
   }) async {
     final reportId =
         FirebaseFirestore.instance.collection('reports').doc().id;
@@ -47,6 +48,7 @@ class ReportSubmissionService {
       aiAnalysis: null,
       matchedCompanyId: null,
       createdAt: Timestamp.now(),
+      isPublic: isPublic,
     );
 
     await _reportService.createReport(report);

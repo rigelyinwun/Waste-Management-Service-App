@@ -31,9 +31,33 @@ class ReportService {
     return _firestore
         .collection(_collection)
         .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => Report.fromFirestore(doc)).toList());
+  }
+
+  Stream<List<Report>> getPublicReports() {
+    return _firestore
+        .collection(_collection)
+        .where('isPublic', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Report.fromFirestore(doc)).toList());
+  }
+
+  Stream<List<Report>> getAllReports() {
+    return _firestore
+        .collection(_collection)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Report.fromFirestore(doc)).toList());
+  }
+
+  Future<void> updateVisibility(String reportId, bool isPublic) async {
+    await _firestore.collection(_collection).doc(reportId).update({
+      'isPublic': isPublic,
+    });
   }
 
   Stream<List<Report>> getUnmatchedReports() {

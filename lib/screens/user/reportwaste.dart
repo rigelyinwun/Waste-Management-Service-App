@@ -71,6 +71,7 @@ class _ReportPageState extends State<ReportPage> {
         description: description,
         imageBytes: _imageBytes!,
         location: const GeoPoint(3.1390, 101.6869), // Mock location (Cyberjaya)
+        isPublic: isPublic,
       );
 
       // Fetch the latest report to show results

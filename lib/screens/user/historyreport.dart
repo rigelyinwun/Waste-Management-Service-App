@@ -1,28 +1,8 @@
 import 'package:flutter/material.dart';
-
-class WasteReport {
-  final String category;
-  final String date;
-  final String location;
-  final String status;
-  final IconData icon;
-  final String weight;
-  final String vehicle;
-  final String description;
-  final String collector;
-
-  WasteReport({
-    required this.category,
-    required this.date,
-    required this.location,
-    required this.status,
-    required this.icon,
-    required this.weight,
-    required this.vehicle,
-    required this.description,
-    required this.collector,
-  });
-}
+import '../../services/auth_service.dart';
+import '../../services/report_service.dart';
+import '../../models/report_model.dart';
+import 'package:intl/intl.dart';
 
 class HistoryReportPage extends StatefulWidget {
   const HistoryReportPage({super.key});
@@ -32,59 +12,12 @@ class HistoryReportPage extends StatefulWidget {
 
 class _HistoryReportPageState extends State<HistoryReportPage> {
   String selectedFilter = "All";
-  final List<WasteReport> reports = [
-    WasteReport(
-      category: "Metal",
-      date: "Feb 10, 2026",
-      location: "Jalan Sri Emas, Cyberjaya",
-      status: "Completed",
-      icon: Icons.layers,
-      weight: "15kg",
-      vehicle: "Truck",
-      description: "Industrial metal scraps.",
-      collector: "Green Earth",
-    ),
-    WasteReport(
-      category: "Furniture",
-      date: "Feb 12, 2026",
-      location: "Parit Jawa, Johor",
-      status: "Pending",
-      icon: Icons.chair,
-      weight: "45kg",
-      vehicle: "Van",
-      description: "Used sofa set, still in good condition",
-      collector: "WoodRetriever",
-    ),
-    WasteReport(
-      category: "Cloth",
-      date: "Feb 10, 2026",
-      location: "Jalan Tasik, Putrajaya",
-      status: "Pending",
-      icon: Icons.checkroom,
-      weight: "8kg",
-      vehicle: "Car",
-      description: "Old clothing items.",
-      collector: "Ms Lim",
-    ),
-    WasteReport(
-      category: "Paper-Based",
-      date: "Feb 10, 2026",
-      location: "Jalan Seroja, Muar",
-      status: "Cancelled",
-      icon: Icons.newspaper,
-      weight: "120kg",
-      vehicle: "Truck",
-      description: "Newspapers and cardboard.",
-      collector: "RecyclePro",
-    ),
-  ];
+  final AuthService _authService = AuthService();
+  final ReportService _reportService = ReportService();
 
   @override
   Widget build(BuildContext context) {
-    final List<WasteReport> filteredReports = reports.where((report) {
-      if (selectedFilter == "All") return true;
-      return report.status == selectedFilter;
-    }).toList();
+    final user = _authService.currentUser;
 
     return Scaffold(
       backgroundColor: const Color(0xFFD3E6DB),
@@ -97,7 +30,7 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
           "History Report",
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white, // Title word is white
+            color: Colors.white,
           ),
         ),
       ),
@@ -121,15 +54,38 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
           ),
 
           Expanded(
-            child: filteredReports.isEmpty
-                ? const Center(child: Text("No records found."))
-                : ListView.builder(
-              itemCount: filteredReports.length,
-              itemBuilder: (context, index) {
-                final report = filteredReports[index];
-                return _buildReportCard(context, report);
-              },
-            ),
+            child: user == null
+                ? const Center(child: Text("Please login to see history."))
+                : StreamBuilder<List<Report>>(
+                    stream: _reportService.getReportsByUser(user.uid),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(child: Text("No records found."));
+                      }
+
+                      final reports = snapshot.data!.where((report) {
+                        if (selectedFilter == "All") return true;
+                        // Status in DB might be lowercase, let's normalize
+                        return report.status.toLowerCase() ==
+                            selectedFilter.toLowerCase();
+                      }).toList();
+
+                      if (reports.isEmpty) {
+                        return const Center(child: Text("No matching records."));
+                      }
+
+                      return ListView.builder(
+                        itemCount: reports.length,
+                        itemBuilder: (context, index) {
+                          final report = reports[index];
+                          return _buildReportCard(context, report);
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -159,12 +115,15 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
     );
   }
 
-  Widget _buildReportCard(BuildContext context, WasteReport report) {
-    Color statusColor = report.status == "Completed"
+  Widget _buildReportCard(BuildContext context, Report report) {
+    final status = report.status;
+    Color statusColor = status.toLowerCase() == "completed"
         ? Colors.green
-        : report.status == "Cancelled"
-        ? Colors.red
-        : Colors.orange;
+        : status.toLowerCase() == "cancelled"
+            ? Colors.red
+            : Colors.orange;
+
+    String dateStr = DateFormat('MMM dd, yyyy').format(report.createdAt.toDate());
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -177,35 +136,40 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
         children: [
           Row(
             children: [
-              Icon(report.icon, size: 50, color: Colors.black87),
+              _buildReportIcon(report),
               const SizedBox(width: 15),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(report.category,
+                    Text(report.aiAnalysis?.category ?? "analyzing...",
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text(report.date,
-                        style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                    Text(report.location,
-                        style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                    Text(report.collector,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text(dateStr,
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text(report.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 12)),
+                    if (report.matchedCompanyId != null)
+                      Text("Matched: ${report.matchedCompanyId}",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 12)),
                   ],
                 ),
               ),
               Column(
                 children: [
                   Icon(
-                      report.status == "Completed"
+                      status.toLowerCase() == "completed"
                           ? Icons.check_circle
-                          : report.status == "Cancelled"
-                          ? Icons.cancel
-                          : Icons.access_time_filled,
+                          : status.toLowerCase() == "cancelled"
+                              ? Icons.cancel
+                              : Icons.access_time_filled,
                       color: statusColor),
-                  Text(report.status,
+                  Text(status.toUpperCase(),
                       style: TextStyle(
                           color: statusColor,
                           fontWeight: FontWeight.bold,
@@ -231,5 +195,16 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildReportIcon(Report report) {
+    final category = report.aiAnalysis?.category.toLowerCase() ?? "";
+    IconData icon = Icons.layers;
+    if (category.contains("metal")) icon = Icons.settings;
+    if (category.contains("furniture")) icon = Icons.chair;
+    if (category.contains("cloth")) icon = Icons.checkroom;
+    if (category.contains("paper")) icon = Icons.newspaper;
+
+    return Icon(icon, size: 50, color: Colors.black87);
   }
 }

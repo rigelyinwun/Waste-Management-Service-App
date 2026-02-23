@@ -11,6 +11,7 @@ class Report {
   final AIAnalysis? aiAnalysis;
   final String? matchedCompanyId;
   final Timestamp createdAt;
+  final bool isPublic;
 
   Report({
     required this.reportId,
@@ -22,6 +23,7 @@ class Report {
     this.aiAnalysis,
     this.matchedCompanyId,
     required this.createdAt,
+    this.isPublic = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,6 +36,7 @@ class Report {
       'aiAnalysis': aiAnalysis?.toMap(),
       'matchedCompanyId': matchedCompanyId,
       'createdAt': createdAt,
+      'isPublic': isPublic,
     };
   }
 
@@ -43,15 +46,16 @@ class Report {
     return Report(
       reportId: doc.id,
       userId: data['userId'],
-      imageUrl: data['imageUrl'],
-      description: data['description'],
+      imageUrl: data['imageUrl'] ?? '',
+      description: data['description'] ?? '',
       location: data['location'],
-      status: data['status'],
+      status: data['status'] ?? 'pending',
       aiAnalysis: data['aiAnalysis'] != null
           ? AIAnalysis.fromMap(data['aiAnalysis'])
           : null,
       matchedCompanyId: data['matchedCompanyId'],
-      createdAt: data['createdAt'],
+      createdAt: data['createdAt'] ?? Timestamp.now(),
+      isPublic: data['isPublic'] ?? false,
     );
   }
 }

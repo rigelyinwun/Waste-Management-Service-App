@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../services/auth_service.dart';
 import '../../services/report_service.dart';
+import '../../services/user_service.dart';
 import '../../models/report_model.dart';
+import '../../models/user_model.dart';
+import 'dart:convert';
 
 class SmartWasteStyles {
   static const Color headerTeal = Color(0xFF387664);
@@ -86,9 +91,10 @@ class _HomePageState extends State<HomePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: reports.map((report) {
                             return RequestCard(
-                              category: report.description,
+                              category: report.aiAnalysis?.category ??
+                                  report.description,
                               status: report.status.toUpperCase(),
-                              icon: Icons.layers, // Generic icon for now
+                              imageUrl: report.imageUrl,
                             );
                           }).toList(),
                         ),
@@ -119,13 +125,13 @@ class _HomePageState extends State<HomePage> {
 class RequestCard extends StatelessWidget {
   final String category;
   final String status;
-  final IconData icon;
+  final String imageUrl;
 
   const RequestCard({
     super.key,
     required this.category,
     required this.status,
-    required this.icon,
+    required this.imageUrl,
   });
 
   @override
@@ -157,7 +163,12 @@ class RequestCard extends StatelessWidget {
                 color: Color(0xFFF0F4F2),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
-              child: Icon(icon, size: 28, color: SmartWasteStyles.headerTeal),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                child: imageUrl.startsWith('http') 
+                    ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image))
+                    : Image.memory(base64Decode(imageUrl), fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image)),
+              ),
             ),
           ),
           Expanded(
@@ -255,56 +266,178 @@ class RealWasteMap extends StatefulWidget {
 
 class _RealWasteMapState extends State<RealWasteMap> {
   final Set<Marker> _markers = {};
+  GoogleMapController? _mapController;
+  final TextEditingController _searchController = TextEditingController();
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
+  AppUser? _currentUserProfile;
+  LatLng _lastKnownLocation = const LatLng(3.1390, 101.6869); // KL
 
   @override
   void initState() {
     super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    await _fetchUserProfile();
+    await _getCurrentLocation();
     _loadMarkers();
   }
 
+  Future<void> _fetchUserProfile() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      final profile = await _userService.fetchUserProfile(user.uid);
+      setState(() {
+        _currentUserProfile = profile;
+      });
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      setState(() {
+        _lastKnownLocation = LatLng(position.latitude, position.longitude);
+      });
+
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(_lastKnownLocation, 14),
+      );
+    } catch (e) {
+      print("Error getting location: $e");
+    }
+  }
+
+  Future<void> _searchLocation() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+
+    try {
+      List<Location> locations = await locationFromAddress(query);
+      if (locations.isNotEmpty) {
+        final loc = LatLng(locations.first.latitude, locations.first.longitude);
+        _mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 14));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Location not found: $e")),
+      );
+    }
+  }
+
   Future<void> _loadMarkers() async {
-    final snapshot =
-        await FirebaseFirestore.instance.collection('reports').get();
+    final isAdmin = _currentUserProfile?.role == 'business' || _currentUserProfile?.role == 'admin';
+    
+    // Load Waste Reports (RED Markers)
+    Query wasteQuery = FirebaseFirestore.instance.collection('reports');
+    if (!isAdmin) {
+      wasteQuery = wasteQuery.where('isPublic', isEqualTo: true);
+    }
 
-    final markers = snapshot.docs.map((doc) {
-      final data = doc.data();
+    final wasteSnapshot = await wasteQuery.get();
+    final wasteMarkers = wasteSnapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
       final GeoPoint location = data['location'];
-
       return Marker(
-        markerId: MarkerId(doc.id),
+        markerId: MarkerId("waste_${doc.id}"),
         position: LatLng(location.latitude, location.longitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         infoWindow: InfoWindow(
-          title: data['description'],
+          title: "Waste: ${data['description'] ?? 'No Description'}",
+          snippet: "Category: ${data['aiAnalysis']?['category'] ?? 'analyzing'}",
+        ),
+      );
+    }).toSet();
+
+    // Load Dumping Stations (GREEN Markers)
+    final stationsSnapshot = await FirebaseFirestore.instance.collection('dumping_stations').get();
+    final stationMarkers = stationsSnapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      final GeoPoint location = data['location'];
+      return Marker(
+        markerId: MarkerId("station_${doc.id}"),
+        position: LatLng(location.latitude, location.longitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(
+          title: "Dumping Station",
+          snippet: "Company ID: ${data['companyId']}",
         ),
       );
     }).toSet();
 
     setState(() {
-      _markers.addAll(markers);
+      _markers.clear();
+      _markers.addAll(wasteMarkers);
+      _markers.addAll(stationMarkers);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 250,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white, width: 4),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: GoogleMap(
-          initialCameraPosition: const CameraPosition(
-            target: LatLng(3.1390, 101.6869), // Kuala Lumpur
-            zoom: 14,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: "Search location...",
+              prefixIcon: const Icon(Icons.search, color: SmartWasteStyles.headerTeal),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.my_location),
+                onPressed: _getCurrentLocation,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onSubmitted: (_) => _searchLocation(),
           ),
-          markers: _markers,
-          zoomControlsEnabled: false,
-          myLocationButtonEnabled: false,
         ),
-      ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          height: 300,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white, width: 4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              )
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(26),
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: _lastKnownLocation,
+                zoom: 14,
+              ),
+              onMapCreated: (controller) => _mapController = controller,
+              markers: _markers,
+              zoomControlsEnabled: true,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
