@@ -29,7 +29,8 @@ class AIService {
     "estimatedWeightKg": number,
     "recommendedTransport": "string",
     "estimatedCost": number,
-    "hazardLevel": "low | medium | high"
+    "hazardLevel": "low | medium | high",
+    "isRecyclable": boolean
   }
 
   Description:

@@ -4,6 +4,10 @@ import '../../models/report_model.dart';
 import 'report_result.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
+import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
+import '../../models/notification_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class WasteListPage extends StatefulWidget {
   const WasteListPage({super.key});
@@ -13,6 +17,9 @@ class WasteListPage extends StatefulWidget {
 
 class _WasteListPageState extends State<WasteListPage> {
   final ReportService _reportService = ReportService();
+  final AuthService _authService = AuthService();
+  final NotificationService _notificationService = NotificationService();
+  final TextEditingController _requestController = TextEditingController();
 
   PreferredSizeWidget _buildAppBar(String title) => AppBar(
     backgroundColor: const Color(0xFF387664),
@@ -43,7 +50,14 @@ class _WasteListPageState extends State<WasteListPage> {
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return _buildEmptyState();
                 }
-                final reports = snapshot.data!;
+                final reports = snapshot.data!
+                    .where((r) => r.userId != _authService.currentUser?.uid)
+                    .toList();
+                
+                if (reports.isEmpty) {
+                  return _buildEmptyState();
+                }
+                
                 return _buildWasteListView(reports);
               },
             ),
@@ -172,8 +186,8 @@ class _WasteListPageState extends State<WasteListPage> {
                   children: [
                     Text(report.aiAnalysis?.category ?? "Unknown", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     Text(report.description, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text("Weight: ${report.aiAnalysis?.estimatedWeight ?? 'N/A'}", style: const TextStyle(fontSize: 12)),
-                    Text(report.aiAnalysis?.marketValue ?? "", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF387664))),
+                    Text("Weight: ${report.aiAnalysis?.estimatedWeightKg ?? 'N/A'}", style: const TextStyle(fontSize: 12)),
+                    Text("${report.aiAnalysis?.estimatedCost ?? ''}", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF387664))),
                   ],
                 ),
               ),
@@ -218,6 +232,7 @@ class _WasteListPageState extends State<WasteListPage> {
             Text("Request to collect ${report.aiAnalysis?.category ?? 'Waste'}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF387664))),
             const SizedBox(height: 15),
             TextField(
+              controller: _requestController,
               maxLines: 4,
               decoration: InputDecoration(
                 hintText: "Type your message to the reporter...",
@@ -228,7 +243,20 @@ class _WasteListPageState extends State<WasteListPage> {
             ),
             const SizedBox(height: 15),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                final message = _requestController.text.trim();
+                
+                // Send notification to the owner
+                await _notificationService.sendNotification(
+                  NotificationModel(
+                    id: '',
+                    recipientId: report.userId,
+                    title: "New Request",
+                    subtitle: "A request to collect ${report.aiAnalysis?.category ?? 'waste'} was sent.",
+                    time: Timestamp.now(),
+                  ),
+                );
+
                 Navigator.pop(context);
                 _showSuccessOverlay(context);
               },

@@ -12,6 +12,7 @@ void main() {
         'recommendedTransport': 'Motorcycle',
         // estimatedCost null
         'estimatedCost': null,
+        'isRecyclable': true,
       };
 
       final analysis = AIAnalysis.fromMap(partialMap);
@@ -21,6 +22,12 @@ void main() {
       expect(analysis.recommendedTransport, 'Motorcycle');
       expect(analysis.estimatedCost, 0.0);
       expect(analysis.hazardLevel, 'Low'); // Default
+      expect(analysis.isRecyclable, true);
+    });
+
+    test('AIAnalysis.fromMap handles missing isRecyclable with default false', () {
+      final analysis = AIAnalysis.fromMap({});
+      expect(analysis.isRecyclable, false);
     });
 
     test('Report constructor handles partial data safely', () {

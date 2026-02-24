@@ -68,4 +68,8 @@ class ReportService {
         .map((snapshot) =>
             snapshot.docs.map((doc) => Report.fromFirestore(doc)).toList());
   }
+
+  Future<void> deleteReport(String reportId) async {
+    await _firestore.collection(_collection).doc(reportId).delete();
+  }
 }

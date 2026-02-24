@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../services/notification_service.dart';
+import '../../services/auth_service.dart';
+import '../../models/notification_model.dart';
+import 'package:intl/intl.dart';
 
 class NotifStyles {
   static const Color headerTeal = Color(0xFF387664);
@@ -24,60 +28,57 @@ class NotificationPage extends StatelessWidget {
   }
   @override
   Widget build(BuildContext context) {
+    final userId = AuthService().currentUser?.uid ?? '';
+    final NotificationService notificationService = NotificationService();
+
     return Scaffold(
       backgroundColor: NotifStyles.backgroundMint,
       appBar: _buildAppBar("Notification"),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Previously",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: NotifStyles.font,
+      body: StreamBuilder<List<NotificationModel>>(
+        stream: notificationService.getNotificationsForUser(userId),
+        builder: (context, snapshot) {
+          print("userid: $userId, Snapshot data: ${snapshot.data}, Connection state: ${snapshot.connectionState}, Error: ${snapshot.error}");
+          
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  "Error loading notifications: ${snapshot.error}",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
-            ),
-            const SizedBox(height: 15),
+            );
+          }
 
-            const _NotificationCard(
-              title: "Collection Success!",
-              subtitle: "Your waste at Parit Jawa was collected.",
-              time: "2:46pm",
-            ),
-            const _NotificationCard(
-              title: "Company Match",
-              subtitle: "GreenCycle is on the way!",
-              time: "12:46pm",
-            ),
-            const _NotificationCard(
-              title: "New Request",
-              subtitle: "A volunteer requested to pick up your \"Old Chair.\"",
-              time: "8:21am",
-            ),
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("No notifications yet."));
+          }
 
-            const SizedBox(height: 20),
-            const Text(
-              "A week ago",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: NotifStyles.font,
-              ),
-            ),
-            const SizedBox(height: 15),
+          // Mark as read when notifications are loaded
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            notificationService.markAllAsRead(userId);
+          });
 
-            const _NotificationCard(
-              title: "AI Analysis Done",
-              subtitle: "Your report has been categorized as 'Metal'.",
-              time: "11:41am",
-            ),
-
-            const SizedBox(height: 50),
-          ],
-        ),
+          final notifications = snapshot.data!;
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final notif = notifications[index];
+              return _NotificationCard(
+                title: notif.title,
+                subtitle: notif.subtitle,
+                time: DateFormat('h:mm a').format(notif.time.toDate()),
+              );
+            },
+          );
+        },
       ),
     );
   }

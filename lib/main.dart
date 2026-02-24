@@ -56,7 +56,13 @@ class MyApp extends StatelessWidget {
         '/historyreport': (context) => const HistoryReportPage(),
         '/base': (context) => const MainBasePage(),
         '/successpage': (context) => const SubmissionSuccessPage(),
-        '/report_result': (context) => const ReportResultPage(),
+        '/report_result': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args != null) {
+            return ReportResultPage(report: args as dynamic);
+          }
+          return const Scaffold(body: Center(child: Text("Error: No Report Data")));
+        },
         '/wastelist': (context) => const WasteListPage(),
         '/volunteercollected': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;

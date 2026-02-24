@@ -4,6 +4,7 @@ class AIAnalysis {
   final String recommendedTransport;
   final double estimatedCost;
   final String hazardLevel;
+  final bool isRecyclable;
 
   AIAnalysis({
     required this.category,
@@ -11,6 +12,7 @@ class AIAnalysis {
     required this.recommendedTransport,
     required this.estimatedCost,
     required this.hazardLevel,
+    required this.isRecyclable,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class AIAnalysis {
       'recommendedTransport': recommendedTransport,
       'estimatedCost': estimatedCost,
       'hazardLevel': hazardLevel,
+      'isRecyclable': isRecyclable,
     };
   }
 
@@ -30,6 +33,7 @@ class AIAnalysis {
       recommendedTransport: map['recommendedTransport'] ?? 'N/A',
       estimatedCost: (map['estimatedCost'] as num?)?.toDouble() ?? 0.0,
       hazardLevel: map['hazardLevel'] ?? 'Low',
+      isRecyclable: map['isRecyclable'] ?? false,
     );
   }
 }

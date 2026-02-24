@@ -105,7 +105,7 @@ class _ReportPageState extends State<ReportPage> {
   Widget _buildInitialForm() {
     return Scaffold(
       backgroundColor: const Color(0xFFD3E6DB),
-      appBar: _buildAppBar("Report Waste"),
+      appBar: _buildAppBar("Report Waste", showBack: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -235,11 +235,12 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(String title) => AppBar(
+  PreferredSizeWidget _buildAppBar(String title, {bool showBack = false}) => AppBar(
         backgroundColor: const Color(0xFF387664),
         elevation: 0,
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: showBack,
+        leading: showBack ? IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)) : null,
         title: Text(
           title,
           style:

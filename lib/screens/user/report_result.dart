@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/report_model.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
+import '../../services/report_service.dart';
+import '../../services/auth_service.dart';
 
 class ReportResultPage extends StatelessWidget {
   final Report report;
@@ -36,11 +38,28 @@ class ReportResultPage extends StatelessWidget {
             _infoRow(context, "Category", report.aiAnalysis?.category ?? "Unknown", true, () => _showCategorySheet(context)),
             _infoRow(context, "Date", DateFormat('MMM dd, yyyy').format(report.createdAt.toDate()), false, null),
             _infoRow(context, "Location", report.description.isNotEmpty ? report.description : "View on map", true, () => _showLocationSheet(context)),
-            _infoRow(context, "Weight", report.aiAnalysis?.estimatedWeight ?? "Unknown", false, null),
-            _infoRow(context, "Est. Value", report.aiAnalysis?.marketValue ?? "N/A", false, null),
+            _infoRow(context, "Weight", (report.aiAnalysis?.estimatedWeightKg ?? "Unknown").toString(), false, null),
+            _infoRow(context, "Est. Cost for collection", (report.aiAnalysis?.estimatedCost ?? "N/A").toString(), false, null),
             _infoRow(context, "Company", report.matchedCompanyId ?? "Not assigned", true, null),
             const SizedBox(height: 20),
             if (report.aiAnalysis != null) _buildAIResultDetails(),
+            const SizedBox(height: 30),
+            if (report.userId == AuthService().currentUser?.uid && report.status != 'completed')
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await ReportService().deleteReport(report.reportId);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text("Cancel Report", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
           ],
         ),
       ),
@@ -91,8 +110,7 @@ class ReportResultPage extends StatelessWidget {
         children: [
           const Row(children: [Icon(Icons.smart_toy_outlined, size: 20), SizedBox(width: 10), Text("AI Analysis Details", style: TextStyle(fontWeight: FontWeight.bold))]),
           const SizedBox(height: 10),
-          _ResultItem(label: "Detected Waste Type", val: report.aiAnalysis?.wasteType ?? "N/A"),
-          _ResultItem(label: "Confidence Level", val: report.aiAnalysis?.confidenceScore != null ? "${(report.aiAnalysis!.confidenceScore * 100).toStringAsFixed(1)}%" : "N/A"),
+          _ResultItem(label: "Detected Waste Type", val: report.aiAnalysis?.category ?? "N/A"),
           _ResultItem(label: "Recyclable", val: report.aiAnalysis?.isRecyclable == true ? "Yes" : "No"),
         ],
       ),
@@ -114,8 +132,6 @@ class ReportResultPage extends StatelessWidget {
             const Text("Category Details", style: TextStyle(color: Colors.orange, fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             _sheetItem("Category", report.aiAnalysis!.category),
-            _sheetItem("Waste Type", report.aiAnalysis!.wasteType),
-            _sheetItem("Confidence", "${(report.aiAnalysis!.confidenceScore * 100).toStringAsFixed(1)}%"),
             const Center(child: Icon(Icons.keyboard_arrow_down, color: Colors.orange)),
           ],
         ),
