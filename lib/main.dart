@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'Admin/dumping_stations.dart';
 import 'Admin/reports.dart';
 
 void main() async {
@@ -21,6 +22,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: TaskHomePage(),
       routes: {
+        '/company/dumping-stations': (context) => const DumpingStationsPage(),//
         '/company/reports': (context) => const ReportsPage(),//
       },
     );
