@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'Admin/dumping_stations.dart';
 import 'Admin/reports.dart';
+import 'Admin/waste_profile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/company/dumping-stations': (context) => const DumpingStationsPage(),//
         '/company/reports': (context) => const ReportsPage(),//
+        '/company/waste-profile': (context) => const WasteProfilePage(),//
       },
     );
   }
