@@ -34,6 +34,8 @@ dependencies:
   excel: ^2.1.0
   pdf: ^3.10.7
   file_saver: ^0.2.12
+  google_maps_flutter: ^2.6.1
+  google_maps_flutter_web: ^0.5.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
