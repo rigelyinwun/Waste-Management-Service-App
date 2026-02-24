@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'Admin/home.dart';
 import 'Admin/dumping_stations.dart';
 import 'Admin/reports.dart';
 import 'Admin/locations.dart';
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: TaskHomePage(),
       routes: {
+        '/company': (context) => const AdminHomePage(),
         '/company/dumping-stations': (context) => const DumpingStationsPage(),//
         '/company/reports': (context) => const ReportsPage(),//
         '/company/waste-profile': (context) => const WasteProfilePage(),//
