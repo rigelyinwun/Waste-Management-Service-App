@@ -44,6 +44,7 @@ void main() {
         imageUrl: data['imageUrl'] ?? '',
         description: data['description'] ?? '',
         location: (data['location'] as GeoPoint?) ?? const GeoPoint(0, 0),
+        locationName: data['locationName'] ?? '',
         status: data['status'] ?? 'pending',
         createdAt: Timestamp.now(),
       );
