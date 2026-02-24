@@ -20,6 +20,8 @@ class _LocationScreenState extends State<LocationsPage> {
   static const Color subtleText = Color(0xFF5B7B74);
   static const Color divider = Color(0xFFA9C8BE);
 
+  // ---- bottom nav ----
+  int _navIndex = 3;
 
   // ---------- Map ----------
   final Completer<GoogleMapController> _mapController = Completer();
@@ -1027,6 +1029,77 @@ class _LocationScreenState extends State<LocationsPage> {
           ),
         ),
 
+        // Bottom nav
+        bottomNavigationBar: Container(
+          padding: EdgeInsets.only(top: rs(6)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, -6),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _navIndex,
+            onTap: (i) {
+              if (i == _navIndex) return;
+
+              setState(() => _navIndex = i);
+
+              switch (i) {
+                case 0:
+                  Navigator.pushReplacementNamed(context, '/company');
+                  break;
+                case 1:
+                  Navigator.pushReplacementNamed(context, '/company/reports');
+                  break;
+                case 2:
+                  Navigator.pushReplacementNamed(
+                    context,
+                    '/company/summary-dashboard',
+                  );
+                  break;
+                case 3:
+                  Navigator.pushReplacementNamed(context, '/company/locations');
+                  break;
+                case 4:
+                  Navigator.pushReplacementNamed(context, '/company/profile');
+                  break;
+              }
+            },
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: headerGreen,
+            unselectedItemColor: Colors.black54,
+            selectedFontSize: 0,
+            unselectedFontSize: 0,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                label: "",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.menu_book_outlined),
+                label: "",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.bar_chart_rounded),
+                label: "",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.map_outlined),
+                label: "",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                label: "",
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

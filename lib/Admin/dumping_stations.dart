@@ -28,7 +28,7 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
   static const Color _buttonGreen = Color(0xFF40B58F);
   static const Color _darkText = Color(0xFF1E1E1E);
 
-  int _bottomIndex = 2;
+  int _bottomIndex = 0;
 
   final Set<String> _selectedStates = {};
 
@@ -79,6 +79,31 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
       isActive: false,
     ),
   ];
+
+  // Bottom nav
+  void _onBottomNavTap(int i) {
+    if (i == _bottomIndex) return;
+
+    setState(() => _bottomIndex = i);
+
+    switch (i) {
+      case 0:
+        Navigator.pushReplacementNamed(context, '/company');
+        break;
+      case 1:
+        Navigator.pushReplacementNamed(context, '/company/reports');
+        break;
+      case 2:
+        Navigator.pushReplacementNamed(context, '/company/summary-dashboard');
+        break;
+      case 3:
+        Navigator.pushReplacementNamed(context, '/company/locations');
+        break;
+      case 4:
+        Navigator.pushReplacementNamed(context, '/company/profile');
+        break;
+    }
+  }
 
   bool get _hasStateFilter => _selectedStates.isNotEmpty;
 
@@ -189,7 +214,6 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
       body: Column(
         children: [
           const SizedBox(height: 14),
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
@@ -205,9 +229,7 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
               ],
             ),
           ),
-
           const SizedBox(height: 10),
-
           Expanded(
             child: filtered.isEmpty
                 ? _NotFoundEmptyState(
@@ -257,7 +279,6 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                     },
                   ),
           ),
-
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
             child: SizedBox(
@@ -285,7 +306,7 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
       ),
       bottomNavigationBar: _BottomBar(
         currentIndex: _bottomIndex,
-        onTap: (i) => setState(() => _bottomIndex = i),
+        onTap: _onBottomNavTap,
       ),
     );
   }
@@ -336,7 +357,6 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                     ],
                   ),
                   const SizedBox(height: 12),
-
                   Wrap(
                     spacing: 10,
                     runSpacing: 10,
@@ -392,9 +412,7 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                       );
                     }).toList(),
                   ),
-
                   const SizedBox(height: 16),
-
                   Row(
                     children: [
                       Expanded(
@@ -517,7 +535,6 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                       ),
                     ),
                     const SizedBox(height: 2),
-
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -529,7 +546,6 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     InkWell(
                       borderRadius: BorderRadius.circular(8),
                       onTap: () async {
@@ -546,19 +562,14 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                         final picked = result.trim();
                         if (picked.isEmpty) return;
 
-                        if (!_existsInList(_states, picked)) {
-                          pendingNewState = picked;
-                        } else {
-                          pendingNewState = null;
-                        }
-
+                        pendingNewState = !_existsInList(_states, picked)
+                            ? picked
+                            : null;
                         setLocal(() => selectedState = picked);
                       },
                       child: _GreySelectBox(value: selectedState),
                     ),
-
                     const SizedBox(height: 14),
-
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -570,7 +581,6 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     InkWell(
                       borderRadius: BorderRadius.circular(8),
                       onTap: () async {
@@ -587,19 +597,14 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                         final picked = result.trim();
                         if (picked.isEmpty) return;
 
-                        if (!_existsInList(_types, picked)) {
-                          pendingNewType = picked;
-                        } else {
-                          pendingNewType = null;
-                        }
-
+                        pendingNewType = !_existsInList(_types, picked)
+                            ? picked
+                            : null;
                         setLocal(() => selectedType = picked);
                       },
                       child: _GreySelectBox(value: selectedType),
                     ),
-
                     const SizedBox(height: 14),
-
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -611,7 +616,6 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     Container(
                       height: 42,
                       decoration: BoxDecoration(
@@ -630,9 +634,7 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 14),
-
                     Row(
                       children: [
                         const Text(
@@ -688,9 +690,7 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 16),
-
                     SizedBox(
                       height: 36,
                       width: 110,
@@ -796,7 +796,6 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                         ],
                       ),
                       const SizedBox(height: 10),
-
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxHeight: 420),
                         child: ClipRRect(
@@ -878,7 +877,6 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
                           ),
                         ),
                       ),
-
                       if (addingNew) ...[
                         const SizedBox(height: 12),
                         Container(
@@ -1066,9 +1064,7 @@ class _NotFoundEmptyState extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 6),
-
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -1077,9 +1073,7 @@ class _NotFoundEmptyState extends StatelessWidget {
                   fontSize: 18,
                 ),
               ),
-
               const SizedBox(height: 6),
-
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
@@ -1090,8 +1084,27 @@ class _NotFoundEmptyState extends StatelessWidget {
                   height: 1.3,
                 ),
               ),
-
               const SizedBox(height: 10),
+              SizedBox(
+                height: 44,
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF40B58F),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text(
+                    "Add Dumping Station",
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -1394,30 +1407,45 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: onTap,
-      type: BottomNavigationBarType.fixed,
-      showSelectedLabels: false,
-      showUnselectedLabels: false,
-      selectedItemColor: Colors.black,
-      unselectedItemColor: Colors.black,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: "Home"),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.menu_book_outlined),
-          label: "Guide",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_rounded),
-          label: "Stats",
-        ),
-        BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: "Map"),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline_rounded),
-          label: "Profile",
-        ),
-      ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((0.08 * 255).round()),
+            blurRadius: 16,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: currentIndex,
+        onTap: onTap,
+        type: BottomNavigationBarType.fixed,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        selectedItemColor: _DumpingStationsPageState._appBarGreen,
+        unselectedItemColor: Colors.black54,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            label: "Home",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book_outlined),
+            label: "List",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.show_chart_outlined),
+            label: "Stats",
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: "Map"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: "Profile",
+          ),
+        ],
+      ),
     );
   }
 }

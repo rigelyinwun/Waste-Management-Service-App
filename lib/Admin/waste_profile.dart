@@ -23,6 +23,7 @@ class WasteProfilePage extends StatefulWidget {
   final String collectionEffort;
   final double initialEstimatedCostRm;
   final String initialCollectStatus;
+  final int currentTabIndex;
 
   const WasteProfilePage({
     super.key,
@@ -30,7 +31,7 @@ class WasteProfilePage extends StatefulWidget {
     this.isNetworkImage = false,
     this.wasteTypeLabel = "Furniture",
     this.isLargeAiCertified = true,
-    this.materialChips = const ["Wood, Fabric"],
+    this.materialChips = const ["Wood", "Fabric"],
     this.weightKg = 20,
     this.transportLabel = "Van",
     this.description = "Used: 2 years",
@@ -44,6 +45,7 @@ class WasteProfilePage extends StatefulWidget {
     this.collectionEffort = "High",
     this.initialEstimatedCostRm = 100.00,
     this.initialCollectStatus = "none",
+    this.currentTabIndex = 2,
   });
 
   @override
@@ -53,6 +55,17 @@ class WasteProfilePage extends StatefulWidget {
 enum _CollectStatus { none, pending, accepted, collected }
 
 class _WasteProfileAdminPageState extends State<WasteProfilePage> {
+  static const List<_NavItem> _tabs = [
+    _NavItem(icon: Icons.home_outlined, route: "/company"),
+    _NavItem(icon: Icons.menu_book_outlined, route: "/company/reports"),
+    _NavItem(
+      icon: Icons.bar_chart_rounded,
+      route: "/company/summary-dashboard",
+    ),
+    _NavItem(icon: Icons.map_outlined, route: "/company/locations"),
+    _NavItem(icon: Icons.person_outline, route: "/company/profile"),
+  ];
+
   late double _estimatedCostRm;
   late _CollectStatus _status;
 
@@ -82,13 +95,30 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
     setState(() => _status = _parseStatus(newStatus));
   }
 
+  void _handleBack() {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop();
+      return;
+    }
+    // fallback
+    nav.pushReplacementNamed("/company/reports");
+  }
+
+  void _goToTab(int i) {
+    if (i == widget.currentTabIndex) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.of(context).pushReplacementNamed(_tabs[i].route);
+  }
+
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     final w = mq.size.width;
     final h = mq.size.height;
 
-    // scale helpers
     double s(double v) => v * (w / 423.0);
     double rs(double v) => v * (h / 917.0);
 
@@ -97,128 +127,181 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
     const buttonGreen = Color(0xFF48B49D);
     const cardBorder = Color(0xFF2E746A);
 
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: headerGreen,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBack();
+      },
+      child: Scaffold(
+        backgroundColor: bg,
+        appBar: AppBar(
+          backgroundColor: headerGreen,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+            ),
+            onPressed: _handleBack,
           ),
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: Text(
-          "Waste Profile",
-          style: TextStyle(
-            fontFamily: 'Lexend',
-            fontSize: s(22),
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+          title: Text(
+            "Waste Profile",
+            style: TextStyle(
+              fontFamily: 'Lexend',
+              fontSize: s(22),
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(s(16), rs(14), s(16), rs(14)),
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.75),
-                      borderRadius: BorderRadius.circular(s(16)),
-                      border: Border.all(color: cardBorder, width: s(1.2)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: s(16),
-                          offset: Offset(0, rs(8)),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        s(14),
-                        rs(14),
-                        s(14),
-                        rs(14),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _imageBlock(s, rs),
-                          SizedBox(height: rs(10)),
-                          _weightAndVehicleRow(s, rs),
-                          SizedBox(height: rs(12)),
-                          _descriptionBlock(s, rs),
-                          SizedBox(height: rs(10)),
-                          Divider(
-                            height: rs(22),
-                            thickness: rs(1),
-                            color: const Color(0xFFE7C9C6),
+        body: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(s(16), rs(14), s(16), rs(14)),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        borderRadius: BorderRadius.circular(s(16)),
+                        border: Border.all(color: cardBorder, width: s(1.2)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: s(16),
+                            offset: Offset(0, rs(8)),
                           ),
-
-                          _sectionHeader("Details & AI Metadata", s, rs),
-                          SizedBox(height: rs(14)),
-
-                          _detailLine(
-                            s,
-                            rs,
-                            'Recyclability level:',
-                            widget.recyclabilityLevel,
-                          ),
-                          _detailLine(
-                            s,
-                            rs,
-                            'Pickup priority:',
-                            widget.pickupPriority,
-                          ),
-                          _detailLine(
-                            s,
-                            rs,
-                            'Collection effort:',
-                            widget.collectionEffort,
-                          ),
-                          _detailLine(
-                            s,
-                            rs,
-                            'AI Confidence:',
-                            '${widget.aiConfidence}%',
-                          ),
-                          _detailLine(s, rs, '', widget.structureLine),
-                          _detailLine(s, rs, 'Quantity:', '${widget.quantity}'),
-                          _detailLine(
-                            s,
-                            rs,
-                            'Estimated weight:',
-                            '${widget.weightKg}kg',
-                          ),
-                          _detailLine(s, rs, 'Logistics:', widget.logistics),
-                          _detailLine(
-                            s,
-                            rs,
-                            'Material Tag:',
-                            widget.materialTag,
-                          ),
-
-                          SizedBox(height: rs(8)),
-
-                          _estimatedCostStepper(s, rs),
-
-                          SizedBox(height: rs(14)),
                         ],
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          s(14),
+                          rs(14),
+                          s(14),
+                          rs(14),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _imageBlock(s, rs),
+                            SizedBox(height: rs(10)),
+                            _weightAndVehicleRow(s, rs),
+                            SizedBox(height: rs(12)),
+                            _descriptionBlock(s, rs),
+                            SizedBox(height: rs(10)),
+                            Divider(
+                              height: rs(22),
+                              thickness: rs(1),
+                              color: const Color(0xFFE7C9C6),
+                            ),
+                            _sectionHeader("Details & AI Metadata", s, rs),
+                            SizedBox(height: rs(14)),
+                            _detailLine(
+                              s,
+                              rs,
+                              'Recyclability level:',
+                              widget.recyclabilityLevel,
+                            ),
+                            _detailLine(
+                              s,
+                              rs,
+                              'Pickup priority:',
+                              widget.pickupPriority,
+                            ),
+                            _detailLine(
+                              s,
+                              rs,
+                              'Collection effort:',
+                              widget.collectionEffort,
+                            ),
+                            _detailLine(
+                              s,
+                              rs,
+                              'AI Confidence:',
+                              '${widget.aiConfidence}%',
+                            ),
+                            _detailLine(s, rs, '', widget.structureLine),
+                            _detailLine(
+                              s,
+                              rs,
+                              'Quantity:',
+                              '${widget.quantity}',
+                            ),
+                            _detailLine(
+                              s,
+                              rs,
+                              'Estimated weight:',
+                              '${widget.weightKg}kg',
+                            ),
+                            _detailLine(s, rs, 'Logistics:', widget.logistics),
+                            _detailLine(
+                              s,
+                              rs,
+                              'Material Tag:',
+                              widget.materialTag,
+                            ),
+                            SizedBox(height: rs(8)),
+                            _estimatedCostStepper(s, rs),
+                            SizedBox(height: rs(14)),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
+                SizedBox(height: rs(14)),
+                _bottomButtons(s, rs, buttonGreen),
+              ],
+            ),
+          ),
+        ),
+
+        bottomNavigationBar: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.10),
+                blurRadius: 18,
+                offset: const Offset(0, -6),
               ),
-              SizedBox(height: rs(14)),
-              _bottomButtons(s, rs, buttonGreen),
             ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+              ),
+              child: BottomNavigationBar(
+                currentIndex: widget.currentTabIndex.clamp(0, _tabs.length - 1),
+                onTap: _goToTab,
+                type: BottomNavigationBarType.fixed,
+                showSelectedLabels: false,
+                showUnselectedLabels: false,
+                selectedFontSize: 0,
+                unselectedFontSize: 0,
+
+                iconSize: 28,
+                elevation: 0,
+                backgroundColor: Colors.white,
+                selectedItemColor: headerGreen,
+                unselectedItemColor: Colors.black45,
+
+                items: _tabs
+                    .map(
+                      (t) => BottomNavigationBarItem(
+                        icon: Icon(t.icon),
+                        label: "",
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
           ),
         ),
       ),
@@ -580,7 +663,6 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
     Color buttonGreen,
   ) {
     final canRequest = _status == _CollectStatus.none;
-
     final canMarkCollected =
         _status == _CollectStatus.accepted || _status == _CollectStatus.pending;
 
@@ -697,9 +779,14 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
 
   void _onMarkCollectedPressed() {
     setState(() => _status = _CollectStatus.collected);
-
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text("Marked as collected.")));
   }
+}
+
+class _NavItem {
+  final IconData icon;
+  final String route;
+  const _NavItem({required this.icon, required this.route});
 }

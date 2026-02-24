@@ -229,6 +229,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
     ),
   ];
 
+  // ===== Bottom nav tap =====
+  void _onNavTap(int i) {
+    setState(() => _navIndex = i);
+  }
+
   // ===== Actions / Nav =====
   void _openNotificationsSheet() {
     showModalBottomSheet(
@@ -545,6 +550,46 @@ class _AdminHomePageState extends State<AdminHomePage> {
         ),
       ),
 
+      // ===== Bottom nav =====
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.only(top: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, -6),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _navIndex,
+          onTap: _onNavTap,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: headerGreen,
+          unselectedItemColor: Colors.black54,
+          selectedFontSize: 0,
+          unselectedFontSize: 0,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: ""),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.menu_book_outlined),
+              label: "",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_rounded),
+              label: "",
+            ),
+            BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: ""),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              label: "",
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
