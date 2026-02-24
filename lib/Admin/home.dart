@@ -231,7 +231,27 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
   // ===== Bottom nav tap =====
   void _onNavTap(int i) {
+    if (i == _navIndex) return;
+
     setState(() => _navIndex = i);
+
+    switch (i) {
+      case 0:
+        Navigator.pushReplacementNamed(context, '/company');
+        break;
+      case 1:
+        Navigator.pushReplacementNamed(context, '/company/reports');
+        break;
+      case 2:
+        Navigator.pushReplacementNamed(context, '/company/summary-dashboard');
+        break;
+      case 3:
+        Navigator.pushReplacementNamed(context, '/company/locations');
+        break;
+      case 4:
+        Navigator.pushReplacementNamed(context, '/company/profile');
+        break;
+    }
   }
 
   // ===== Actions / Nav =====
