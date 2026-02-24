@@ -80,6 +80,28 @@ flutter:
           weight: 800
         - asset: assets/fonts/Lexend/Lexend-Black.ttf
           weight: 900
+
+    - family: LexendExa
+      fonts:
+        - asset: assets/fonts/LexendExa/LexendExa-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/LexendExa/LexendExa-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/LexendExa/LexendExa-Light.ttf
+          weight: 300
+        - asset: assets/fonts/LexendExa/LexendExa-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/LexendExa/LexendExa-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/LexendExa/LexendExa-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/LexendExa/LexendExa-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/LexendExa/LexendExa-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/LexendExa/LexendExa-Black.ttf
+          weight: 900
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
