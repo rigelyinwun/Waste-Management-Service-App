@@ -38,39 +38,20 @@ class _MainBasePageState extends State<MainBasePage> {
             currentIndex: _currentIndex,
             selectedItemColor: const Color(0xFF387664),
             unselectedItemColor: Colors.black38,
-            onTap: (index) => setState(() => _currentIndex = index),
+            onTap: (index) {
+              setState(() => _currentIndex = index);
+              if (index == 2) {
+                NotificationService().markAllAsRead(AuthService().currentUser?.uid ?? '');
+              }
+            },
             items: [
               const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Home"),
               const BottomNavigationBarItem(icon: Icon(Icons.list), label: "Report"),
               BottomNavigationBarItem(
-                icon: Stack(
-                  children: [
-                    const Icon(Icons.notifications_none),
-                    if (unreadCount > 0)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(1),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 12,
-                            minHeight: 12,
-                          ),
-                          child: Text(
-                            '$unreadCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
+                icon: Badge(
+                  label: Text('$unreadCount'),
+                  isLabelVisible: unreadCount > 0,
+                  child: const Icon(Icons.notifications_none),
                 ),
                 label: "Notification",
               ),

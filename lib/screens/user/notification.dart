@@ -60,11 +60,6 @@ class NotificationPage extends StatelessWidget {
             return const Center(child: Text("No notifications yet."));
           }
 
-          // Mark as read when notifications are loaded
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            notificationService.markAllAsRead(userId);
-          });
-
           final notifications = snapshot.data!;
           return ListView.builder(
             padding: const EdgeInsets.all(20),
