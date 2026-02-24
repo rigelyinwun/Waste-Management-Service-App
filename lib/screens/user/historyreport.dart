@@ -3,6 +3,7 @@ import '../../services/auth_service.dart';
 import '../../services/report_service.dart';
 import '../../models/report_model.dart';
 import 'package:intl/intl.dart';
+import 'report_result.dart';
 
 class HistoryReportPage extends StatefulWidget {
   const HistoryReportPage({super.key});
@@ -60,14 +61,10 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
                     stream: _reportService.getReportsByUser(user.uid),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
-                        print("Report stream error: ${snapshot.error}");
                         return Center(
                           child: Text("Error loading reports: ${snapshot.error}"),
                         );
                       }
-
-                      print(
-                          "Report stream snapshot: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, data length: ${snapshot.data?.length}");
 
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
@@ -78,7 +75,6 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
 
                       final reports = snapshot.data!.where((report) {
                         if (selectedFilter == "All") return true;
-                        // Status in DB might be lowercase, let's normalize
                         return report.status.toLowerCase() ==
                             selectedFilter.toLowerCase();
                       }).toList();
@@ -191,8 +187,12 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
           const SizedBox(height: 10),
           ElevatedButton(
             onPressed: () {
-              Navigator.pushNamed(context, '/volunteercollected',
-                  arguments: report);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ReportResultPage(report: report),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4FD195),
@@ -200,7 +200,7 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
                   borderRadius: BorderRadius.circular(10)),
             ),
             child: const Text("View Details",
-                style: TextStyle(color: Colors.white)),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           )
         ],
       ),

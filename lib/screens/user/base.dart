@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'homepage.dart';
-import 'reportwaste.dart';
+import 'wastelist.dart';
 import 'notification.dart';
 import 'profilepage.dart';
+import 'mappage.dart';
 
 class MainBasePage extends StatefulWidget {
   const MainBasePage({super.key});
@@ -14,9 +15,9 @@ class _MainBasePageState extends State<MainBasePage> {
   int _currentIndex = 0;
   final List<Widget> _pages = [
     const HomePage(),
-    const ReportPage(),
+    const WasteListPage(),
     const NotificationPage(),
-    const Center(child: Text("Map Page")),
+    const MapPage(),
     const ProfilePage(),
   ];
   @override

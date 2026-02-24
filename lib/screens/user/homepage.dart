@@ -9,6 +9,7 @@ import '../../services/user_service.dart';
 import '../../models/report_model.dart';
 import '../../models/user_model.dart';
 import 'dart:convert';
+import 'report_result.dart';
 
 class SmartWasteStyles {
   static const Color headerTeal = Color(0xFF387664);
@@ -90,12 +91,7 @@ class _HomePageState extends State<HomePage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: reports.map((report) {
-                            return RequestCard(
-                              category: report.aiAnalysis?.category ??
-                                  report.description,
-                              status: report.status.toUpperCase(),
-                              imageUrl: report.imageUrl,
-                            );
+                            return RequestCard(report: report);
                           }).toList(),
                         ),
                       ),
@@ -123,76 +119,85 @@ class _HomePageState extends State<HomePage> {
 }
 
 class RequestCard extends StatelessWidget {
-  final String category;
-  final String status;
-  final String imageUrl;
+  final Report report;
 
   const RequestCard({
     super.key,
-    required this.category,
-    required this.status,
-    required this.imageUrl,
+    required this.report,
   });
 
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double cardWidth = (screenWidth - 60) / 3;
+    final category = report.aiAnalysis?.category ?? report.description;
+    final status = report.status.toUpperCase();
+    final imageUrl = report.imageUrl;
 
-    return Container(
-      width: cardWidth,
-      height: 160,
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF0F4F2),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: imageUrl.startsWith('http') 
-                    ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image))
-                    : Image.memory(base64Decode(imageUrl), fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image)),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReportResultPage(report: report),
+          ),
+        );
+      },
+      child: Container(
+        width: cardWidth,
+        height: 160,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4))
+          ],
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF0F4F2),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  child: imageUrl.startsWith('http') 
+                      ? Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image))
+                      : Image.memory(base64Decode(imageUrl), fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image)),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    category,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 11),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 4),
-                  StatusBadge(status: status),
-                ],
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      category,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 11),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    StatusBadge(status: status),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

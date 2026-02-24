@@ -1,38 +1,46 @@
 import 'package:flutter/material.dart';
+import '../../models/report_model.dart';
+import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class ReportResultPage extends StatelessWidget {
-  const ReportResultPage({super.key});
+  final Report report;
+  const ReportResultPage({super.key, required this.report});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD3E6DB),
       appBar: AppBar(
         backgroundColor: const Color(0xFF387664),
-        title: const Text("Report Waste", style: TextStyle(color: Colors.white)),
+        title: const Text("Report Detail", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.check, size: 24),
-                SizedBox(width: 10),
-                Text("Your report is submitted!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Icon(report.status == 'pending' ? Icons.timer_outlined : Icons.check_circle_outline, size: 24, color: const Color(0xFF387664)),
+                const SizedBox(width: 10),
+                Text(
+                  report.status == 'pending' ? "Report is pending" : "Report is ${report.status}",
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 15),
             _buildImageHeader(),
             const SizedBox(height: 20),
-            _infoRow(context, "Category", "Metal", true, () => _showCategorySheet(context)),
-            _infoRow(context, "Date", "Feb 10, 2026", true, () => _showTimelineSheet(context)),
-            _infoRow(context, "Location", "Jalan Sri Emas, Cyberjaya", true, () => _showLocationSheet(context)),
-            _infoRow(context, "Weight", "Approx. 60 kg", false, null),
-            _infoRow(context, "Est. Cost", "RM150 - RM300", false, null),
-            _infoRow(context, "Expected Company", "Green Earth", true, null),
+            _infoRow(context, "Category", report.aiAnalysis?.category ?? "Unknown", true, () => _showCategorySheet(context)),
+            _infoRow(context, "Date", DateFormat('MMM dd, yyyy').format(report.createdAt.toDate()), false, null),
+            _infoRow(context, "Location", report.description.isNotEmpty ? report.description : "View on map", true, () => _showLocationSheet(context)),
+            _infoRow(context, "Weight", report.aiAnalysis?.estimatedWeight ?? "Unknown", false, null),
+            _infoRow(context, "Est. Value", report.aiAnalysis?.marketValue ?? "N/A", false, null),
+            _infoRow(context, "Company", report.matchedCompanyId ?? "Not assigned", true, null),
             const SizedBox(height: 20),
-            _buildAIResultDetails(),
+            if (report.aiAnalysis != null) _buildAIResultDetails(),
           ],
         ),
       ),
@@ -44,14 +52,16 @@ class ReportResultPage extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(15),
-          child: Image.network('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=500', height: 180, width: double.infinity, fit: BoxFit.cover),
+          child: report.imageUrl.startsWith('http')
+              ? Image.network(report.imageUrl, height: 200, width: double.infinity, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 100))
+              : Image.memory(base64Decode(report.imageUrl), height: 200, width: double.infinity, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 100)),
         ),
         Positioned(
           top: 10, right: 10,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(color: const Color(0xFF387664), borderRadius: BorderRadius.circular(20)),
-            child: const Text("Public", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(color: report.isPublic ? const Color(0xFF387664) : Colors.grey, borderRadius: BorderRadius.circular(20)),
+            child: Text(report.isPublic ? "Public" : "Private", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
           ),
         )
       ],
@@ -77,19 +87,20 @@ class ReportResultPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(color: const Color(0xFFB5D1C1), borderRadius: BorderRadius.circular(15)),
-      child: const Column(
+      child: Column(
         children: [
-          Row(children: [Icon(Icons.smart_toy_outlined, size: 20), SizedBox(width: 10), Text("Result Details", style: TextStyle(fontWeight: FontWeight.bold))]),
-          SizedBox(height: 10),
-          _ResultItem(label: "Detected Waste Type", val: "Construction Debris"),
-          _ResultItem(label: "Suggested Category", val: "Metal"),
-          _ResultItem(label: "Confidence Level", val: "92%"),
+          const Row(children: [Icon(Icons.smart_toy_outlined, size: 20), SizedBox(width: 10), Text("AI Analysis Details", style: TextStyle(fontWeight: FontWeight.bold))]),
+          const SizedBox(height: 10),
+          _ResultItem(label: "Detected Waste Type", val: report.aiAnalysis?.wasteType ?? "N/A"),
+          _ResultItem(label: "Confidence Level", val: report.aiAnalysis?.confidenceScore != null ? "${(report.aiAnalysis!.confidenceScore * 100).toStringAsFixed(1)}%" : "N/A"),
+          _ResultItem(label: "Recyclable", val: report.aiAnalysis?.isRecyclable == true ? "Yes" : "No"),
         ],
       ),
     );
   }
 
   void _showCategorySheet(BuildContext context) {
+    if (report.aiAnalysis == null) return;
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF2E5E4E),
@@ -98,20 +109,20 @@ class ReportResultPage extends StatelessWidget {
         padding: const EdgeInsets.all(25.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text("Category Details", style: TextStyle(color: Colors.orange, fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            _sheetItem("Primary Category", "Metal"),
-            _sheetItem("Sub-category", "• Concrete, • Bricks, • Mixed Debris"),
-            _sheetItem("Hazard Level", "Low Risk"),
-            const Icon(Icons.keyboard_arrow_down, color: Colors.orange),
+            _sheetItem("Category", report.aiAnalysis!.category),
+            _sheetItem("Waste Type", report.aiAnalysis!.wasteType),
+            _sheetItem("Confidence", "${(report.aiAnalysis!.confidenceScore * 100).toStringAsFixed(1)}%"),
+            const Center(child: Icon(Icons.keyboard_arrow_down, color: Colors.orange)),
           ],
         ),
       ),
     );
   }
 
-  void _showTimelineSheet(BuildContext context) {}
   void _showLocationSheet(BuildContext context) {}
 
   Widget _sheetItem(String label, String value) {
@@ -133,8 +144,11 @@ class _ResultItem extends StatelessWidget {
   final String label, val;
   const _ResultItem({required this.label, required this.val});
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [Text(label, style: const TextStyle(fontSize: 12)), Text(val, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))],
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [Text(label, style: const TextStyle(fontSize: 12)), Text(val, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))],
+    ),
   );
 }

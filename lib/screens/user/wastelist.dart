@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../services/report_service.dart';
+import '../../models/report_model.dart';
+import 'report_result.dart';
+import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class WasteListPage extends StatefulWidget {
   const WasteListPage({super.key});
@@ -7,7 +12,8 @@ class WasteListPage extends StatefulWidget {
 }
 
 class _WasteListPageState extends State<WasteListPage> {
-  bool _isEmpty = false;
+  final ReportService _reportService = ReportService();
+
   PreferredSizeWidget _buildAppBar(String title) => AppBar(
     backgroundColor: const Color(0xFF387664),
     elevation: 0,
@@ -18,6 +24,7 @@ class _WasteListPageState extends State<WasteListPage> {
       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
     ),
   );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,7 +34,19 @@ class _WasteListPageState extends State<WasteListPage> {
         children: [
           _buildTopSearchSection(),
           Expanded(
-            child: _isEmpty ? _buildEmptyState() : _buildWasteListView(),
+            child: StreamBuilder<List<Report>>(
+              stream: _reportService.getPublicReports(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFF387664)));
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return _buildEmptyState();
+                }
+                final reports = snapshot.data!;
+                return _buildWasteListView(reports);
+              },
+            ),
           ),
         ],
       ),
@@ -56,7 +75,6 @@ class _WasteListPageState extends State<WasteListPage> {
             children: [
               _filterHeaderChip("Category"),
               _filterHeaderChip("Date"),
-              _filterHeaderChip("Distance"),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.tune, color: Color(0xFF387664)),
@@ -91,7 +109,7 @@ class _WasteListPageState extends State<WasteListPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.network('https://cdn-icons-png.flaticon.com/512/7486/7486744.png', height: 180),
+          const Icon(Icons.delete_outline, size: 100, color: Color(0xFF387664)),
           const SizedBox(height: 20),
           const Text("No Waste Reports Found.",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF387664))),
@@ -101,7 +119,7 @@ class _WasteListPageState extends State<WasteListPage> {
           ),
           const SizedBox(height: 20),
           ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () => Navigator.pushNamed(context, '/reportwaste'),
             icon: const Icon(Icons.add),
             label: const Text("Report Waste"),
             style: ElevatedButton.styleFrom(
@@ -115,57 +133,68 @@ class _WasteListPageState extends State<WasteListPage> {
     );
   }
 
-  Widget _buildWasteListView() {
+  Widget _buildWasteListView(List<Report> reports) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: 2,
-      itemBuilder: (context, index) => _buildWasteCard(),
+      itemCount: reports.length,
+      itemBuilder: (context, index) => _buildWasteCard(reports[index]),
     );
   }
 
-  Widget _buildWasteCard() {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.network('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=200', width: 85, height: 85, fit: BoxFit.cover),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Metal", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  const Text("Taman Sri Emas, Cyberjaya", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  const Text("Approx. 60 kg", style: TextStyle(fontSize: 12)),
-                  const Text("RM 150 - RM 300", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF387664))),
-                ],
+  Widget _buildWasteCard(Report report) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReportResultPage(report: report),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: report.imageUrl.startsWith('http')
+                    ? Image.network(report.imageUrl, width: 85, height: 85, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image))
+                    : Image.memory(base64Decode(report.imageUrl), width: 85, height: 85, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image)),
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                const Text("Feb 10, 2026", style: TextStyle(fontSize: 10, color: Colors.grey)),
-                const Row(children: [Icon(Icons.location_on, size: 12, color: Colors.grey), Text("1.2km", style: TextStyle(fontSize: 10, color: Colors.grey))]),
-                const SizedBox(height: 15),
-                ElevatedButton(
-                  onPressed: () => _showSendRequestModal(context),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF82D69A),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
-                  ),
-                  child: const Text("Send Request", style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
-                )
-              ],
-            )
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(report.aiAnalysis?.category ?? "Unknown", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text(report.description, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text("Weight: ${report.aiAnalysis?.estimatedWeight ?? 'N/A'}", style: const TextStyle(fontSize: 12)),
+                    Text(report.aiAnalysis?.marketValue ?? "", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF387664))),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(DateFormat('MMM dd').format(report.createdAt.toDate()), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                  const SizedBox(height: 15),
+                  ElevatedButton(
+                    onPressed: () => _showSendRequestModal(context, report),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF82D69A),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                    ),
+                    child: const Text("Send Request", style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                  )
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -175,7 +204,7 @@ class _WasteListPageState extends State<WasteListPage> {
     showDialog(context: context, builder: (context) => const FilterDialog());
   }
 
-  void _showSendRequestModal(BuildContext context) {
+  void _showSendRequestModal(BuildContext context, Report report) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -186,12 +215,12 @@ class _WasteListPageState extends State<WasteListPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("Send Request", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF387664))),
+            Text("Request to collect ${report.aiAnalysis?.category ?? 'Waste'}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF387664))),
             const SizedBox(height: 15),
             TextField(
               maxLines: 4,
               decoration: InputDecoration(
-                hintText: "Type your message here...",
+                hintText: "Type your message to the reporter...",
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
