@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../services/notification_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/report_service.dart';
 import '../../models/notification_model.dart';
 import 'package:intl/intl.dart';
+import 'volunteercollected.dart';
 
 class NotifStyles {
   static const Color headerTeal = Color(0xFF387664);
@@ -37,8 +39,6 @@ class NotificationPage extends StatelessWidget {
       body: StreamBuilder<List<NotificationModel>>(
         stream: notificationService.getNotificationsForUser(userId),
         builder: (context, snapshot) {
-          print("userid: $userId, Snapshot data: ${snapshot.data}, Connection state: ${snapshot.connectionState}, Error: ${snapshot.error}");
-          
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -75,6 +75,22 @@ class NotificationPage extends StatelessWidget {
                 title: notif.title,
                 subtitle: notif.subtitle,
                 time: DateFormat('h:mm a').format(notif.time.toDate()),
+                onTap: () async {
+                  if (notif.type == 'collection_request' && notif.relatedId != null) {
+                    final report = await ReportService().getReportById(notif.relatedId!);
+                    if (report != null && context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => VolunteerCollectedPage(
+                            report: report,
+                            volunteerId: notif.senderId,
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
               );
             },
           );
@@ -88,18 +104,19 @@ class _NotificationCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final String time;
+  final VoidCallback? onTap;
 
   const _NotificationCard({
     required this.title,
     required this.subtitle,
     required this.time,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -107,57 +124,67 @@ class _NotificationCard extends StatelessWidget {
           BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F4F2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.recycling, color: NotifStyles.headerTeal, size: 35),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
-                        color: Colors.black,
-                      ),
-                    ),
-                    Text(
-                      time,
-                      style: const TextStyle(
-                          color: Colors.black26,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold
-                      ),
-                    ),
-                  ],
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F4F2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.recycling, color: NotifStyles.headerTeal, size: 35),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Text(
+                            time,
+                            style: const TextStyle(
+                                color: Colors.black26,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w700
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

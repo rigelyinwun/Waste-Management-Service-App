@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'dart:convert';
 import '../../services/report_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
+import '../../models/notification_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReportResultPage extends StatelessWidget {
   final Report report;
@@ -37,28 +40,88 @@ class ReportResultPage extends StatelessWidget {
             const SizedBox(height: 20),
             _infoRow(context, "Category", report.aiAnalysis?.category ?? "Unknown", true, () => _showCategorySheet(context)),
             _infoRow(context, "Date", DateFormat('MMM dd, yyyy').format(report.createdAt.toDate()), false, null),
-            _infoRow(context, "Location", report.description.isNotEmpty ? report.description : "View on map", true, () => _showLocationSheet(context)),
+            _infoRow(context, "Location", report.locationName.isNotEmpty ? report.locationName : "Unknown", true, () => _showLocationSheet(context)),
             _infoRow(context, "Weight", (report.aiAnalysis?.estimatedWeightKg ?? "Unknown").toString(), false, null),
             _infoRow(context, "Est. Cost for collection", (report.aiAnalysis?.estimatedCost ?? "N/A").toString(), false, null),
-            _infoRow(context, "Company", report.matchedCompanyId ?? "Not assigned", true, null),
+            _infoRow(context, "Company", report.matchedCompanyId ?? "Not assigned", report.matchedCompanyId != null, report.matchedCompanyId != null ? () => _showCompanySheet(context) : null),
             const SizedBox(height: 20),
             if (report.aiAnalysis != null) _buildAIResultDetails(),
             const SizedBox(height: 30),
             if (report.userId == AuthService().currentUser?.uid && report.status != 'completed')
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await ReportService().deleteReport(report.reportId);
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              Column(
+                children: [
+                  if (report.status == 'approved')
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final reportService = ReportService();
+                          final notifService = NotificationService();
+                          
+                          // 1. Mark as collected
+                          await reportService.markAsCollected(report.reportId);
+                          
+                          // 2. Notify reporter (owner)
+                          await notifService.sendNotification(
+                            NotificationModel(
+                              id: '',
+                              recipientId: report.userId,
+                              title: "Waste Collected",
+                              subtitle: "The waste from your report '${report.aiAnalysis?.category ?? 'waste'}' has been collected.",
+                              type: 'collection_completed',
+                              relatedId: report.reportId,
+                              time: Timestamp.now(),
+                            )
+                          );
+
+                          // 3. Notify volunteer
+                          final volunteerId = await notifService.getVolunteerIdForReport(report.reportId);
+                          if (volunteerId != null) {
+                            await notifService.sendNotification(
+                              NotificationModel(
+                                id: '',
+                                recipientId: volunteerId,
+                                title: "Waste Collected",
+                                subtitle: "The waste collection for '${report.aiAnalysis?.category ?? 'waste'}' is completed.",
+                                type: 'collection_completed',
+                                relatedId: report.reportId,
+                                time: Timestamp.now(),
+                              )
+                            );
+                          }
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Marked as collected!")),
+                            );
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF387664),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text("Mark as Collected", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await ReportService().deleteReport(report.reportId);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text("Cancel Report", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
                   ),
-                  child: const Text("Cancel Report", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
+                ],
               ),
           ],
         ),
@@ -118,7 +181,6 @@ class ReportResultPage extends StatelessWidget {
   }
 
   void _showCategorySheet(BuildContext context) {
-    if (report.aiAnalysis == null) return;
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF2E5E4E),
@@ -131,7 +193,8 @@ class ReportResultPage extends StatelessWidget {
           children: [
             const Text("Category Details", style: TextStyle(color: Colors.orange, fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            _sheetItem("Category", report.aiAnalysis!.category),
+            _sheetItem("Category", report.aiAnalysis?.category ?? "N/A"),
+            _sheetItem("Description", report.description),
             const Center(child: Icon(Icons.keyboard_arrow_down, color: Colors.orange)),
           ],
         ),
@@ -139,7 +202,66 @@ class ReportResultPage extends StatelessWidget {
     );
   }
 
-  void _showLocationSheet(BuildContext context) {}
+  void _showLocationSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2E5E4E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(25.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Location Details", style: TextStyle(color: Colors.orange, fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            _sheetItem("Reported Location", report.locationName),
+            _sheetItem("Geolocation", "Lat: ${report.location.latitude}, Long: ${report.location.longitude}"),
+            const Center(child: Icon(Icons.keyboard_arrow_down, color: Colors.orange)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCompanySheet(BuildContext context) {
+    if (report.matchedCompanyId == null) return;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2E5E4E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance.collection('companies').doc(report.matchedCompanyId).get(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Colors.orange));
+          }
+          
+          final data = snapshot.data?.data() as Map<String, dynamic>? ?? {};
+          final name = data['name'] ?? 'Unknown Company';
+          final address = data['address'] ?? 'N/A';
+          final phone = data['phone'] ?? 'N/A';
+
+          return Padding(
+            padding: const EdgeInsets.all(25.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Company Details", style: TextStyle(color: Colors.orange, fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                _sheetItem("Company Name", name),
+                _sheetItem("Address", address),
+                _sheetItem("Phone", phone),
+                const Center(child: Icon(Icons.keyboard_arrow_down, color: Colors.orange)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   Widget _sheetItem(String label, String value) {
     return Padding(

@@ -15,6 +15,7 @@ class ReportPage extends StatefulWidget {
 
 class _ReportPageState extends State<ReportPage> {
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
   final AuthService _authService = AuthService();
   final ReportService _reportService = ReportService();
   final ImageService _imageService = ImageService();
@@ -39,6 +40,7 @@ class _ReportPageState extends State<ReportPage> {
 
   Future<void> _submitReport() async {
     final description = _descriptionController.text.trim();
+    final locationName = _locationController.text.trim();
     final user = _authService.currentUser;
 
     if (_imageBytes == null) {
@@ -51,6 +53,13 @@ class _ReportPageState extends State<ReportPage> {
     if (description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please provide a description")),
+      );
+      return;
+    }
+
+    if (locationName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please provide a location")),
       );
       return;
     }
@@ -71,6 +80,7 @@ class _ReportPageState extends State<ReportPage> {
         description: description,
         imageBytes: _imageBytes!,
         location: const GeoPoint(3.1390, 101.6869), // Mock location (Cyberjaya)
+        locationName: locationName,
         isPublic: isPublic,
       );
 
@@ -143,7 +153,7 @@ class _ReportPageState extends State<ReportPage> {
                 _descriptionController),
             const SizedBox(height: 20),
             _customLabel("Location"),
-            _customField("Select Location", null, icon: Icons.location_on),
+            _customField("Select Location", _locationController, icon: Icons.location_on),
             const SizedBox(height: 25),
             _buildPublicToggle(),
             const SizedBox(height: 30),
@@ -187,7 +197,7 @@ class _ReportPageState extends State<ReportPage> {
                 "Category", _submittedReport?.aiAnalysis?.category ?? "Pending",
                 () => _showCategorySheet()),
             _resultTile("Date", "Today", () => _showTimelineSheet()),
-            _resultTile("Location", "Cyberjaya", () => _showLocationSheet()),
+            _resultTile("Location", _submittedReport?.locationName ?? "Unknown", () => _showLocationSheet()),
             _resultTile(
                 "Weight",
                 "Approx. ${_submittedReport?.aiAnalysis?.estimatedWeightKg ?? 0} kg",
@@ -224,6 +234,9 @@ class _ReportPageState extends State<ReportPage> {
                 leading: const Icon(Icons.category, color: Colors.white),
                 title: Text(_submittedReport?.aiAnalysis?.category ?? "Pending",
                     style: const TextStyle(color: Colors.white))),
+            Text(
+                "Description: ${_submittedReport?.description ?? 'N/A'}",
+                style: const TextStyle(color: Colors.white70)),
             const Divider(color: Colors.white24),
             Text(
                 "Transport: ${_submittedReport?.aiAnalysis?.recommendedTransport ?? 'N/A'}",
@@ -318,5 +331,41 @@ class _ReportPageState extends State<ReportPage> {
       );
 
   void _showTimelineSheet() {}
-  void _showLocationSheet() {}
+  void _showLocationSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2E5E4E),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Location Details",
+                style: TextStyle(
+                    color: Colors.orange,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            _sheetItem("Reported Location", _submittedReport?.locationName ?? "Unknown"),
+            _sheetItem("Geolocation", "Lat: ${_submittedReport?.location.latitude}, Long: ${_submittedReport?.location.longitude}"),
+            const Center(child: Icon(Icons.keyboard_arrow_down, color: Colors.orange)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetItem(String label, String value) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label,
+          style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w500)),
+      const SizedBox(height: 5),
+      Text(value, style: const TextStyle(color: Colors.white70)),
+      const SizedBox(height: 15),
+    ],
+  );
 }

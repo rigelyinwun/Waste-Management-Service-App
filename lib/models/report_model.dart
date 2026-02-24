@@ -7,6 +7,7 @@ class Report {
   final String imageUrl;
   final String description;
   final GeoPoint location;
+  final String locationName;
   final String status;
   final AIAnalysis? aiAnalysis;
   final String? matchedCompanyId;
@@ -19,6 +20,7 @@ class Report {
     required this.imageUrl,
     required this.description,
     required this.location,
+    required this.locationName,
     required this.status,
     this.aiAnalysis,
     this.matchedCompanyId,
@@ -32,6 +34,7 @@ class Report {
       'imageUrl': imageUrl,
       'description': description,
       'location': location,
+      'locationName': locationName,
       'status': status,
       'aiAnalysis': aiAnalysis?.toMap(),
       'matchedCompanyId': matchedCompanyId,
@@ -49,6 +52,7 @@ class Report {
       imageUrl: data['imageUrl'] ?? '',
       description: data['description'] ?? '',
       location: data['location'] ?? const GeoPoint(0, 0),
+      locationName: data['locationName'] ?? '',
       status: data['status'] ?? 'pending',
       aiAnalysis: data['aiAnalysis'] != null
           ? AIAnalysis.fromMap(data['aiAnalysis'])

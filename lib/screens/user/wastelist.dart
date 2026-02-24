@@ -253,6 +253,9 @@ class _WasteListPageState extends State<WasteListPage> {
                     recipientId: report.userId,
                     title: "New Request",
                     subtitle: "A request to collect ${report.aiAnalysis?.category ?? 'waste'} was sent.",
+                    type: 'collection_request',
+                    relatedId: report.reportId,
+                    senderId: _authService.currentUser?.uid,
                     time: Timestamp.now(),
                   ),
                 );

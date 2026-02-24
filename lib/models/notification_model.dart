@@ -5,6 +5,9 @@ class NotificationModel {
   final String recipientId;
   final String title;
   final String subtitle;
+  final String type;
+  final String? relatedId;
+  final String? senderId;
   final Timestamp time;
   final bool isRead;
 
@@ -13,6 +16,9 @@ class NotificationModel {
     required this.recipientId,
     required this.title,
     required this.subtitle,
+    required this.type,
+    this.relatedId,
+    this.senderId,
     required this.time,
     this.isRead = false,
   });
@@ -22,6 +28,9 @@ class NotificationModel {
       'recipientId': recipientId,
       'title': title,
       'subtitle': subtitle,
+      'type': type,
+      'relatedId': relatedId,
+      'senderId': senderId,
       'time': time,
       'isRead': isRead,
     };
@@ -34,6 +43,9 @@ class NotificationModel {
       recipientId: data['recipientId'] ?? '',
       title: data['title'] ?? '',
       subtitle: data['subtitle'] ?? '',
+      type: data['type'] ?? 'general',
+      relatedId: data['relatedId'],
+      senderId: data['senderId'],
       time: data['time'] ?? Timestamp.now(),
       isRead: data['isRead'] ?? false,
     );

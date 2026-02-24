@@ -12,6 +12,18 @@ class ReportService {
         .set(report.toMap());
   }
 
+  Future<Report?> getReportById(String reportId) async {
+    final doc = await _firestore.collection(_collection).doc(reportId).get();
+    if (!doc.exists) return null;
+    return Report.fromFirestore(doc);
+  }
+
+  Future<void> updateReportStatus(String reportId, String status) async {
+    await _firestore.collection(_collection).doc(reportId).update({
+      'status': status,
+    });
+  }
+
   Future<void> updateAIAnalysis(
       String reportId, Map<String, dynamic> aiData) async {
     await _firestore.collection(_collection).doc(reportId).update({
@@ -67,6 +79,13 @@ class ReportService {
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => Report.fromFirestore(doc)).toList());
+  }
+
+  Future<void> markAsCollected(String reportId) async {
+    await _firestore.collection(_collection).doc(reportId).update({
+      'status': 'completed',
+      'isPublic': false,
+    });
   }
 
   Future<void> deleteReport(String reportId) async {

@@ -29,6 +29,7 @@ class ReportSubmissionService {
     required String description,
     required Uint8List imageBytes,
     required GeoPoint location,
+    required String locationName,
     bool isPublic = false,
   }) async {
     final reportId =
@@ -44,6 +45,7 @@ class ReportSubmissionService {
       imageUrl: base64Image,
       description: description,
       location: location,
+      locationName: locationName,
       status: "analyzing",
       aiAnalysis: null,
       matchedCompanyId: null,

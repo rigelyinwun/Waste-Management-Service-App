@@ -44,4 +44,16 @@ class NotificationService {
     }
     await batch.commit();
   }
+
+  Future<String?> getVolunteerIdForReport(String reportId) async {
+    final snapshot = await _firestore
+        .collection(_collection)
+        .where('relatedId', isEqualTo: reportId)
+        .where('type', isEqualTo: 'collection_request')
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+    return snapshot.docs.first.data()['senderId'] as String?;
+  }
 }
