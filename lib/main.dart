@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'Admin/dumping_stations.dart';
 import 'Admin/reports.dart';
+import 'Admin/dashboard.dart';
 import 'Admin/waste_profile.dart';
 
 void main() async {
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
         '/company/dumping-stations': (context) => const DumpingStationsPage(),//
         '/company/reports': (context) => const ReportsPage(),//
         '/company/waste-profile': (context) => const WasteProfilePage(),//
+        '/company/summary-dashboard': (context) => const SummaryDashboardPage(),//
       },
     );
   }
