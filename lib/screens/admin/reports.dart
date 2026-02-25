@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../services/report_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
 import '../../models/report_model.dart';
+import '../../models/user_model.dart';
 import 'waste_profile.dart';
 
 class ReportsPage extends StatefulWidget {
@@ -13,7 +16,33 @@ class ReportsPage extends StatefulWidget {
 
 class _ReportsPageState extends State<ReportsPage> {
   final ReportService _reportService = ReportService();
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
+  
   String _searchQuery = "";
+  AppUser? _currentUser;
+  bool _isLoadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      final profile = await _userService.fetchUserProfile(user.uid);
+      if (mounted) {
+        setState(() {
+          _currentUser = profile;
+          _isLoadingUser = false;
+        });
+      }
+    } else {
+      if (mounted) setState(() => _isLoadingUser = false);
+    }
+  }
 
   void _handleBack() {
     if (Navigator.of(context).canPop()) {
@@ -68,8 +97,12 @@ class _ReportsPageState extends State<ReportsPage> {
                 ),
               ),
               Expanded(
-                child: StreamBuilder<List<Report>>(
-                  stream: _reportService.getAllReports(),
+                child: _isLoadingUser 
+                  ? const Center(child: CircularProgressIndicator())
+                  : StreamBuilder<List<Report>>(
+                  stream: _currentUser?.role == 'business'
+                      ? _reportService.getReportsByCompany(_currentUser!.uid)
+                      : _reportService.getAllReports(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());

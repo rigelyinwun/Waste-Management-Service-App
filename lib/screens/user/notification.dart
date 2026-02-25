@@ -21,7 +21,7 @@ class NotificationPage extends StatelessWidget {
       backgroundColor: const Color(0xFF387664),
       elevation: 0,
       centerTitle: true,
-      automaticallyImplyLeading: false,
+      automaticallyImplyLeading: true,
       title: Text(
         title,
         style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),

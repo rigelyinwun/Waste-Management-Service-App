@@ -11,6 +11,7 @@ class AppUser {
   // company fields
   final String? companyName;
   final String? companySSM;
+  final String? phoneNumber;
   final List<String>? wasteCategories;
   final List<String>? serviceAreas;
 
@@ -21,6 +22,7 @@ class AppUser {
     this.username,
     this.companyName,
     this.companySSM,
+    this.phoneNumber,
     this.wasteCategories,
     this.serviceAreas,
   });
@@ -32,6 +34,7 @@ class AppUser {
       'username': username,
       'companyName': companyName,
       'companySSM': companySSM,
+      'phoneNumber': phoneNumber,
       'wasteCategories': wasteCategories,
       'serviceAreas': serviceAreas,
       'createdAt': FieldValue.serverTimestamp(),
@@ -47,6 +50,7 @@ class AppUser {
       username: map['username'],
       companyName: map['companyName'],
       companySSM: map['companySSM'],
+      phoneNumber: map['phoneNumber'],
       wasteCategories:
           map['wasteCategories'] != null
               ? List<String>.from(map['wasteCategories'])

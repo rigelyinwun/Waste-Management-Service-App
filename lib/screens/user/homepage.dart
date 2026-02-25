@@ -38,16 +38,28 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: SmartWasteStyles.headerTeal,
         elevation: 0,
-        centerTitle: true,
         automaticallyImplyLeading: false,
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
+        title: Row(
           children: [
-            Icon(Icons.recycling, color: Colors.greenAccent),
-            SizedBox(width: 8),
-            Text("SmartWaste",
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            SizedBox(
+              width: 35,
+              height: 35,
+              child: Image.asset(
+                'assets/logo.png',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.recycling, color: Colors.white),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              "SmartWaste",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
           ],
         ),
       ),

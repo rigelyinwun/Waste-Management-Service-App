@@ -22,6 +22,12 @@ class SignUpPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Image.asset(
+                    'assets/logo.png',
+                    height: 80,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.recycling, size: 80, color: Color(0xFF2D6A4F)),
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     'JOIN US',
                     style: TextStyle(

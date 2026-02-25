@@ -22,6 +22,11 @@ import '../../screens/user/report_result.dart';
 import '../../screens/user/wastelist.dart';
 import '../../screens/user/volunteercollected.dart';
 import '../../screens/admin/admin_base.dart';
+import '../../screens/admin/home.dart';
+import '../../screens/admin/reports.dart';
+import '../../screens/admin/dashboard.dart';
+import '../../screens/admin/locations.dart';
+import '../../screens/admin/dumping_stations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,6 +78,12 @@ class MyApp extends StatelessWidget {
           }
           return const Scaffold(body: Center(child: Text("Error: No Report Data")));
         },
+        '/company': (context) => const AdminHomePage(),
+        '/company/reports': (context) => const ReportsPage(),
+        '/company/dumping-stations': (context) => const DumpingStationsPage(),
+        '/company/summary-dashboard': (context) => const SummaryDashboardPage(),
+        '/company/locations': (context) => const LocationsPage(),
+        '/company/profile': (context) => const ProfilePage(showAppBar: false),
       },
     );
   }

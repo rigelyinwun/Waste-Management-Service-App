@@ -22,7 +22,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
   final UserService _userService = UserService();
   bool _isLoading = false;
 
-  String? _selectedCategory;
+  List<String> _selectedCategories = [];
   String? _selectedArea;
 
   final List<String> _categories = [
@@ -53,7 +53,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
         ssm.isEmpty ||
         email.isEmpty ||
         password.isEmpty ||
-        _selectedCategory == null ||
+        _selectedCategories.isEmpty ||
         _selectedArea == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill in all fields")),
@@ -80,7 +80,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
         email: email,
         companyName: companyName,
         companySSM: ssm,
-        wasteCategories: [_selectedCategory!],
+        wasteCategories: _selectedCategories,
         serviceAreas: [_selectedArea!],
       );
 
@@ -125,6 +125,12 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        Image.asset(
+                          'assets/logo.png',
+                          height: 80,
+                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.recycling, size: 80, color: Color(0xFF2E6153)),
+                        ),
+                        const SizedBox(height: 10),
                         const Text(
                           "Sign Up",
                           style: TextStyle(
@@ -158,10 +164,8 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
                   _buildField("COMPANY NAME", _companyNameController),
                   _buildField("COMPANY REGISTRATION (SSM)", _ssmController),
                   _buildField("BUSINESS EMAIL ADDRESS", _emailController),
-                  _buildDropdown(
-                      "WASTE CATEGORY:", _categories, _selectedCategory, (val) {
-                    setState(() => _selectedCategory = val);
-                  }),
+                  _buildMultiSelectCategory(),
+                  const SizedBox(height: 10),
                   _buildDropdown("SERVICE AREA", _areas, _selectedArea, (val) {
                     setState(() => _selectedArea = val);
                   }),
@@ -260,6 +264,66 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMultiSelectCategory() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 15, bottom: 5),
+          child: Text(
+            "WASTE CATEGORY (SELECT MULTIPLE):",
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2E6153),
+            ),
+          ),
+        ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF8BC9A8),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Wrap(
+            spacing: 8.0,
+            runSpacing: 4.0,
+            children: _categories.map((category) {
+              final isSelected = _selectedCategories.contains(category);
+              return FilterChip(
+                label: Text(
+                  category,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : const Color(0xFF2E6153),
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                selected: isSelected,
+                onSelected: (bool selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedCategories.add(category);
+                    } else {
+                      _selectedCategories.remove(category);
+                    }
+                  });
+                },
+                selectedColor: const Color(0xFF1B3022),
+                checkmarkColor: Colors.white,
+                backgroundColor: Colors.white.withOpacity(0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 

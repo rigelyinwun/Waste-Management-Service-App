@@ -15,13 +15,19 @@ class AdminBasePage extends StatefulWidget {
 class _AdminBasePageState extends State<AdminBasePage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    AdminHomePage(),
-    ReportsPage(),
-    SummaryDashboardPage(),
-    LocationsPage(),
-    ProfilePage(),
-  ];
+  late List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      AdminHomePage(onTabChange: _onTabTapped),
+      const ReportsPage(),
+      const SummaryDashboardPage(),
+      const LocationsPage(),
+      const ProfilePage(showAppBar: false),
+    ];
+  }
 
   void _onTabTapped(int index) {
     setState(() {

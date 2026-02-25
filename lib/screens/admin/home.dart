@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../services/auth_service.dart';
+import '../../services/report_service.dart';
+import '../../services/user_service.dart';
+import '../../models/report_model.dart';
+import '../../models/user_model.dart';
+import '../../models/dumping_station_model.dart';
+import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import 'waste_profile.dart';
 
 class AdminHomePage extends StatefulWidget {
-  const AdminHomePage({super.key});
+  final Function(int)? onTabChange;
+  const AdminHomePage({super.key, this.onTabChange});
 
   @override
   State<AdminHomePage> createState() => _AdminHomePageState();
@@ -9,37 +21,140 @@ class AdminHomePage extends StatefulWidget {
 
 enum _SummaryRange { week, month, year }
 
-enum _ReportStatus { pending, accepted, collected }
-
 class _AdminHomePageState extends State<AdminHomePage> {
   static const Color bg = Color(0xFFE6F1ED);
   static const Color headerGreen = Color(0xFF2E746A);
   static const Color pillGreen = Color(0xFF4B9E92);
 
+  final AuthService _authService = AuthService();
+  final ReportService _reportService = ReportService();
+  final UserService _userService = UserService();
+
   _SummaryRange _range = _SummaryRange.week;
+  List<Report> _allReports = [];
+  List<DumpingStation> _allStations = [];
+  AppUser? _currentUserProfile;
+  LatLng _lastKnownLocation = const LatLng(3.1390, 101.6869); // KL
+  GoogleMapController? _mapController;
+  final Set<Marker> _markers = {};
+  bool _isLoading = true;
 
-  int? _selectedPinIndex;
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
 
-  int get _totalReports {
-    switch (_range) {
-      case _SummaryRange.week:
-        return 28;
-      case _SummaryRange.month:
-        return 112;
-      case _SummaryRange.year:
-        return 1320;
+  Future<void> _initializeApp() async {
+    await _fetchUserProfile();
+    await _getCurrentLocation();
+    _loadData();
+  }
+
+  Future<void> _fetchUserProfile() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      final profile = await _userService.fetchUserProfile(user.uid);
+      if (mounted) {
+        setState(() {
+          _currentUserProfile = profile;
+        });
+      }
     }
   }
 
-  int get _totalCollected {
-    switch (_range) {
-      case _SummaryRange.week:
-        return 19;
-      case _SummaryRange.month:
-        return 86;
-      case _SummaryRange.year:
-        return 1088;
+  Future<void> _getCurrentLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        final position = await Geolocator.getCurrentPosition();
+        if (mounted) {
+          setState(() {
+            _lastKnownLocation = LatLng(position.latitude, position.longitude);
+          });
+        }
+      }
+    } catch (e) {
+      print("Error getting location: $e");
     }
+  }
+
+  void _loadData() {
+    // Listen to reports
+    _reportService.getUnmatchedReports().listen((reports) {
+      if (mounted) {
+        setState(() {
+          _allReports = reports;
+          _updateMarkers();
+          _isLoading = false;
+        });
+      }
+    });
+
+    // Listen to stations
+    FirebaseFirestore.instance.collection('dumping_stations').snapshots().listen((snapshot) {
+      final stations = snapshot.docs.map((doc) => DumpingStation.fromMap(doc.data())).toList();
+      if (mounted) {
+        setState(() {
+          _allStations = stations;
+          _updateMarkers();
+        });
+      }
+    });
+  }
+
+  void _updateMarkers() {
+    final Set<Marker> newMarkers = {};
+
+    // Waste Reports (Red)
+    for (var report in _allReports) {
+      newMarkers.add(
+        Marker(
+          markerId: MarkerId("report_${report.reportId}"),
+          position: LatLng(report.location.latitude, report.location.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: InfoWindow(
+            title: report.aiAnalysis?.category ?? "Waste",
+            snippet: report.description,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => WasteProfilePage(report: report),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
+    // Stations (Green)
+    for (var station in _allStations) {
+      if (station.location is GeoPoint) {
+        final gp = station.location as GeoPoint;
+        newMarkers.add(
+          Marker(
+            markerId: MarkerId("station_${station.stationId}"),
+            position: LatLng(gp.latitude, gp.longitude),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+            infoWindow: InfoWindow(
+              title: "Dumping Station",
+              snippet: station.categories.join(", "),
+            ),
+          ),
+        );
+      }
+    }
+
+    setState(() {
+      _markers.clear();
+      _markers.addAll(newMarkers);
+    });
   }
 
   String get _rangeLabel {
@@ -53,199 +168,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
     }
   }
 
-  final List<_PendingRequest> _allRequests = [
-    _PendingRequest(
-      id: "req_01",
-      category: "Fabric",
-      weight: "5kg",
-      location: "Wangsa Permai • ~200m",
-      icon: Icons.checkroom,
-      status: _ReportStatus.pending,
-      createdAt: DateTime.now().subtract(const Duration(minutes: 12)),
-    ),
-    _PendingRequest(
-      id: "req_02",
-      category: "Furniture",
-      weight: "20kg",
-      location: "PV12 • ~0.3km",
-      icon: Icons.chair_alt_outlined,
-      status: _ReportStatus.pending,
-      createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 10)),
-    ),
-    _PendingRequest(
-      id: "req_03",
-      category: "Metal",
-      weight: "12kg",
-      location: "Taman Melati • ~2.0km",
-      icon: Icons.construction_outlined,
-      status: _ReportStatus.pending,
-      createdAt: DateTime.now().subtract(const Duration(hours: 2, minutes: 20)),
-    ),
-    _PendingRequest(
-      id: "req_04",
-      category: "E-waste",
-      weight: "4kg",
-      location: "Gombak • ~3.4km",
-      icon: Icons.memory_outlined,
-      status: _ReportStatus.pending,
-      createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
-    ),
-    _PendingRequest(
-      id: "req_05",
-      category: "Furniture",
-      weight: "15kg",
-      location: "Setapak • ~0.8km",
-      icon: Icons.inventory_2_outlined,
-      status: _ReportStatus.pending,
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    _PendingRequest(
-      id: "req_06",
-      category: "Metal",
-      weight: "9kg",
-      location: "Batu Caves • ~4.5km",
-      icon: Icons.construction_outlined,
-      status: _ReportStatus.accepted,
-      createdAt: DateTime.now().subtract(const Duration(hours: 10)),
-    ),
-  ];
-
-  List<_PendingRequest> get _pendingOnlySortedLatest {
-    final list =
-        _allRequests.where((r) => r.status == _ReportStatus.pending).toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return list;
-  }
-
-  List<_PendingRequest> get _top3PendingLatest {
-    final list = _pendingOnlySortedLatest;
-    return list.length <= 3 ? list : list.sublist(0, 3);
-  }
-
-  final List<_ReportItem> _latestReports = [
-    _ReportItem(
-      id: "rep_01",
-      title: "Old Sofa",
-      wasteType: "Furniture",
-      weight: "20kg",
-      distance: "1.2km",
-      location: "Wangsa Permai",
-      status: _ReportStatus.pending,
-      timeAgo: "12m ago",
-      icon: Icons.chair_alt_outlined,
-    ),
-    _ReportItem(
-      id: "rep_02",
-      title: "Mixed Clothes Bundle",
-      wasteType: "Clothes",
-      weight: "6kg",
-      distance: "0.6km",
-      location: "Setapak",
-      status: _ReportStatus.pending,
-      timeAgo: "1h ago",
-      icon: Icons.checkroom,
-    ),
-    _ReportItem(
-      id: "rep_03",
-      title: "Scrap Metal Pieces",
-      wasteType: "Metal",
-      weight: "12kg",
-      distance: "2.0km",
-      location: "Taman Melati",
-      status: _ReportStatus.accepted,
-      timeAgo: "3h ago",
-      icon: Icons.construction_outlined,
-    ),
-    _ReportItem(
-      id: "rep_04",
-      title: "E-waste Box",
-      wasteType: "E-waste",
-      weight: "4kg",
-      distance: "3.4km",
-      location: "Gombak",
-      status: _ReportStatus.collected,
-      timeAgo: "6h ago",
-      icon: Icons.memory_outlined,
-    ),
-    _ReportItem(
-      id: "rep_05",
-      title: "Wooden Crates x3",
-      wasteType: "Furniture",
-      weight: "15kg",
-      distance: "0.3km",
-      location: "PV12",
-      status: _ReportStatus.pending,
-      timeAgo: "Yesterday",
-      icon: Icons.inventory_2_outlined,
-    ),
-  ];
-
-  final List<_MapPin> _pins = [
-    _MapPin(
-      x: 0.62,
-      y: 0.34,
-      type: _MapPinType.report,
-      color: Color(0xFF7A1F1F),
-      condition: "Good",
-      titleLine: "Waste 3x Wooden Crates",
-      distanceLine: "Distance: 0.3km",
-    ),
-    _MapPin(
-      x: 0.35,
-      y: 0.48,
-      type: _MapPinType.report,
-      color: Color(0xFF7A1F1F),
-      condition: "Normal",
-      titleLine: "Waste Mixed Clothes Bundle",
-      distanceLine: "Distance: 0.6km",
-    ),
-    _MapPin(
-      x: 0.70,
-      y: 0.66,
-      type: _MapPinType.report,
-      color: Color(0xFF7A1F1F),
-      condition: "Good",
-      titleLine: "Waste Old Sofa",
-      distanceLine: "Distance: 1.2km",
-    ),
-    _MapPin(
-      x: 0.88,
-      y: 0.44,
-      type: _MapPinType.station,
-      color: Color(0xFF2CCB68),
-      condition: "Active",
-      titleLine: "Station Recycling Point A",
-      distanceLine: "Distance: 0.7km",
-    ),
-    _MapPin(
-      x: 0.12,
-      y: 0.78,
-      type: _MapPinType.station,
-      color: Color(0xFF2CCB68),
-      condition: "Active",
-      titleLine: "Station Drop-off Point B",
-      distanceLine: "Distance: 1.1km",
-    ),
-  ];
-
-  void _openPendingRequestsPage() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _PendingRequestsPage(
-          headerGreen: headerGreen,
-          pillGreen: pillGreen,
-          items: _pendingOnlySortedLatest,
-        ),
-      ),
-    );
-  }
-
   void _openDumpingStations() {
     Navigator.of(context).pushNamed('/company/dumping-stations');
-  }
-
-  void _openAllReports() {
-    Navigator.of(context).pushNamed('/company/reports');
   }
 
   void _openSummaryDashboard() {
@@ -266,39 +190,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
     );
   }
 
-  void _openReportDetailsSheet(_ReportItem it) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _ReportDetailsSheet(
-        headerGreen: headerGreen,
-        pillGreen: pillGreen,
-        item: it,
-        onAccept: it.status == _ReportStatus.pending
-            ? () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Accepted request.")),
-                );
-              }
-            : null,
-        onMarkCollected:
-            (it.status == _ReportStatus.pending ||
-                it.status == _ReportStatus.accepted)
-            ? () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Marked as collected.")),
-                );
-              }
-            : null,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     final mq = MediaQuery.of(context);
     final w = mq.size.width;
     final h = mq.size.height;
@@ -306,20 +202,18 @@ class _AdminHomePageState extends State<AdminHomePage> {
     double s(double v) => v * (w / 423.0);
     double rs(double v) => v * (h / 917.0);
 
-    final topPending = _top3PendingLatest;
+    final topPending = _allReports.take(3).toList();
 
     return Scaffold(
       backgroundColor: bg,
       body: Column(
         children: [
-          // ===== Content =====
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(s(18), rs(16), s(18), rs(18)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ===== TOP PENDING REQUESTS =====
                   Row(
                     children: [
                       Expanded(
@@ -340,7 +234,13 @@ class _AdminHomePageState extends State<AdminHomePage> {
                       _PillButton(
                         label: "View All  →",
                         color: pillGreen,
-                        onTap: _openPendingRequestsPage,
+                        onTap: () {
+                          if (widget.onTabChange != null) {
+                            widget.onTabChange!(1);
+                          } else {
+                            Navigator.pushNamed(context, '/company/reports');
+                          }
+                        },
                         height: rs(44),
                         paddingH: s(18),
                         textSize: s(12),
@@ -351,78 +251,81 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
                   SizedBox(
                     height: rs(178),
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      separatorBuilder: (_, _) => SizedBox(width: s(14)),
-                      itemCount: topPending.length,
-                      itemBuilder: (context, index) {
-                        final p = topPending[index];
-                        return _RequestCard(
-                          s: s,
-                          rs: rs,
-                          width: s(156),
-                          imageWidget: _PhotoMock(icon: p.icon),
-                          category: p.category,
-                          weight: p.weight,
-                          location: p.location,
-                        );
-                      },
+                    child: topPending.isEmpty
+                        ? const Center(child: Text("No pending requests"))
+                        : ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            separatorBuilder: (_, _) => SizedBox(width: s(14)),
+                            itemCount: topPending.length,
+                            itemBuilder: (context, index) {
+                              final p = topPending[index];
+                              return GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => WasteProfilePage(report: p),
+                                  ),
+                                ),
+                                child: _RequestCard(
+                                  s: s,
+                                  rs: rs,
+                                  width: s(156),
+                                  imageWidget: p.imageUrl.startsWith('http')
+                                      ? Image.network(p.imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image))
+                                      : Image.memory(base64Decode(p.imageUrl), fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image)),
+                                  category: p.aiAnalysis?.category ?? "analyzing",
+                                  weight: "Unknown", // Weight not in model
+                                  location: p.locationName,
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+
+                  SizedBox(height: rs(18)),
+
+                  // ===== Real Map =====
+                  Container(
+                    width: double.infinity,
+                    height: rs(360),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(s(18)),
+                      color: Colors.white,
+                      boxShadow: const [
+                        BoxShadow(
+                          blurRadius: 10,
+                          color: Color(0x14000000),
+                          offset: Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ),
-
-                  SizedBox(height: rs(18)),
-
-                  // ===== Map Preview =====
-                  _OverviewMapCard(
-                    s: s,
-                    rs: rs,
-                    pillGreen: pillGreen,
-                    onDumpingStations: _openDumpingStations,
-                    pins: _pins,
-                    selectedPinIndex: _selectedPinIndex,
-                    onTapPin: (idx) =>
-                        setState(() => _selectedPinIndex = idx),
-                    onCloseCallout: () =>
-                        setState(() => _selectedPinIndex = null),
-                  ),
-
-                  SizedBox(height: rs(18)),
-
-                  // ===== Latest reports =====
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          "Latest Reports",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'Lexend',
-                            fontSize: s(18),
-                            fontWeight: FontWeight.w800,
-                            height: 1.05,
-                            color: Colors.black,
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      children: [
+                        GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: _lastKnownLocation,
+                            zoom: 14,
+                          ),
+                          onMapCreated: (controller) => _mapController = controller,
+                          markers: _markers,
+                          myLocationEnabled: true,
+                          myLocationButtonEnabled: false,
+                        ),
+                        Positioned(
+                          top: rs(12),
+                          right: s(12),
+                          child: _PillButton(
+                            label: "Dumping Stations  →",
+                            color: pillGreen,
+                            onTap: _openDumpingStations,
+                            height: rs(42),
+                            paddingH: s(14),
+                            textSize: s(12),
                           ),
                         ),
-                      ),
-                      SizedBox(width: s(10)),
-                      _PillButton(
-                        label: "View All  →",
-                        color: pillGreen,
-                        onTap: _openAllReports,
-                        height: rs(40),
-                        paddingH: s(16),
-                        textSize: s(12),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: rs(10)),
-
-                  _LatestReportsList(
-                    s: s,
-                    rs: rs,
-                    items: _latestReports,
-                    onTapItem: _openReportDetailsSheet,
+                      ],
+                    ),
                   ),
 
                   SizedBox(height: rs(18)),
@@ -462,16 +365,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
                     rs: rs,
                     pillGreen: pillGreen,
                     range: _range,
-                    totalReports: _totalReports,
-                    totalCollected: _totalCollected,
+                    totalReports: _allReports.length,
+                    totalCollected: 0, // Need logic for collected
                     onChangeRange: (r) => setState(() => _range = r),
                     onTapTotalReports: () => _showMetricPopup(
                       title: "Total Reports",
-                      value: _totalReports,
+                      value: _allReports.length,
                     ),
                     onTapTotalCollected: () => _showMetricPopup(
                       title: "Total Collected",
-                      value: _totalCollected,
+                      value: 0,
                     ),
                   ),
 
@@ -531,24 +434,6 @@ class _PillButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/* =========================
-   Pending Request card (FIXED RenderFlex overflow)
-   - Uses LayoutBuilder and flexible heights
-========================= */
-class _PhotoMock extends StatelessWidget {
-  final IconData icon;
-  const _PhotoMock({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF3F3F3),
-      alignment: Alignment.center,
-      child: Icon(icon, size: 42, color: Colors.black.withValues(alpha: 0.30)),
     );
   }
 }
@@ -697,516 +582,6 @@ class _TinyText extends StatelessWidget {
         fontWeight: weight,
         height: 1.1,
         color: Colors.black,
-      ),
-    );
-  }
-}
-
-/* =========================
-   Map Card
-   CHANGE:
-   - Station markers are GREEN ELLIPSE markers (not green pins)
-   - Fix lint: local identifier no underscore (pinOffset)
-========================= */
-class _OverviewMapCard extends StatelessWidget {
-  final double Function(double) s;
-  final double Function(double) rs;
-  final Color pillGreen;
-  final VoidCallback onDumpingStations;
-
-  final List<_MapPin> pins;
-  final int? selectedPinIndex;
-  final void Function(int index) onTapPin;
-  final VoidCallback onCloseCallout;
-
-  const _OverviewMapCard({
-    required this.s,
-    required this.rs,
-    required this.pillGreen,
-    required this.onDumpingStations,
-    required this.pins,
-    required this.selectedPinIndex,
-    required this.onTapPin,
-    required this.onCloseCallout,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sel = selectedPinIndex;
-
-    return Container(
-      width: double.infinity,
-      height: rs(360),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(s(18)),
-        color: Colors.white,
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 10,
-            color: Color(0x14000000),
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: LayoutBuilder(
-        builder: (context, box) {
-          final bw = box.maxWidth;
-          final bh = box.maxHeight;
-
-          Offset pinOffset(int i) => Offset(pins[i].x * bw, pins[i].y * bh);
-
-          return Stack(
-            children: [
-              Positioned.fill(
-                child: Container(
-                  color: const Color(0xFFEFEDE6),
-                  child: CustomPaint(painter: _SimpleMapPainter()),
-                ),
-              ),
-
-              Positioned(
-                top: rs(12),
-                right: s(12),
-                child: _PillButton(
-                  label: "Dumping Stations  →",
-                  color: pillGreen,
-                  onTap: onDumpingStations,
-                  height: rs(42),
-                  paddingH: s(14),
-                  textSize: s(12),
-                ),
-              ),
-
-              // User dot
-              Positioned(
-                left: bw * 0.54,
-                top: bh * 0.62,
-                child: _UserDot(radius: s(48)),
-              ),
-
-              // Pins / Markers
-              for (int i = 0; i < pins.length; i++)
-                Positioned(
-                  left: pinOffset(i).dx - s(18),
-                  top: pinOffset(i).dy - s(18),
-                  child: GestureDetector(
-                    onTap: () => onTapPin(i),
-                    behavior: HitTestBehavior.opaque,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        if (sel == i)
-                          Container(
-                            width: s(44),
-                            height: s(44),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: pins[i].type == _MapPinType.station
-                                  ? const Color(
-                                      0xFF2CCB68,
-                                    ).withValues(alpha: 0.18)
-                                  : const Color(
-                                      0xFF7A1F1F,
-                                    ).withValues(alpha: 0.14),
-                            ),
-                          ),
-
-                        // REPORT = red pin
-                        if (pins[i].type == _MapPinType.report)
-                          Icon(
-                            Icons.location_pin,
-                            size: s(46),
-                            color: const Color(0xFF7A1F1F),
-                          ),
-
-                        // STATION = green ellipse marker
-                        if (pins[i].type == _MapPinType.station)
-                          _StationEllipseMarker(s: s, selected: sel == i),
-                      ],
-                    ),
-                  ),
-                ),
-
-              // Callout
-              if (sel != null)
-                Positioned(
-                  left: (pinOffset(sel).dx + s(22)).clamp(s(12), bw - s(220)),
-                  top: (pinOffset(sel).dy - s(55)).clamp(s(12), bh - s(120)),
-                  child: _PinCallout(
-                    s: s,
-                    condition: pins[sel].condition,
-                    titleLine: pins[sel].titleLine,
-                    distanceLine: pins[sel].distanceLine,
-                    onClose: onCloseCallout,
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _StationEllipseMarker extends StatelessWidget {
-  final double Function(double) s;
-  final bool selected;
-
-  const _StationEllipseMarker({required this.s, required this.selected});
-
-  @override
-  Widget build(BuildContext context) {
-    final w = s(34);
-    final h = s(34);
-    final r = s(999);
-
-    return SizedBox(
-      width: s(46),
-      height: s(46),
-      child: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            if (selected)
-              Container(
-                width: w + s(14),
-                height: h + s(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2CCB68).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(r),
-                ),
-              ),
-
-            Container(
-              width: w,
-              height: h,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(r),
-                border: Border.all(
-                  width: s(3.2),
-                  color: const Color(0xFF2CCB68),
-                ),
-              ),
-            ),
-
-            // center dot
-            Container(
-              width: s(14),
-              height: s(14),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF2CCB68),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PinCallout extends StatelessWidget {
-  final double Function(double) s;
-  final String condition;
-  final String titleLine;
-  final String distanceLine;
-  final VoidCallback onClose;
-
-  const _PinCallout({
-    required this.s,
-    required this.condition,
-    required this.titleLine,
-    required this.distanceLine,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onClose,
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          width: s(210),
-          padding: EdgeInsets.all(s(14)),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(s(20)),
-            boxShadow: const [
-              BoxShadow(
-                blurRadius: 14,
-                color: Color(0x1A000000),
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Condition: $condition | Waste",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'LexendExa',
-                  fontSize: s(10),
-                  fontWeight: FontWeight.w900,
-                  color: Colors.black,
-                ),
-              ),
-              SizedBox(height: s(8)),
-              Text(
-                titleLine,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Lexend',
-                  fontSize: s(14),
-                  fontWeight: FontWeight.w900,
-                  height: 1.1,
-                  color: Colors.black,
-                ),
-              ),
-              SizedBox(height: s(6)),
-              Text(
-                distanceLine,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'LexendExa',
-                  fontSize: s(11),
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black.withValues(alpha: 0.65),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UserDot extends StatelessWidget {
-  final double radius;
-  const _UserDot({required this.radius});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: radius * 2,
-          height: radius * 2,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF2A73FF).withValues(alpha: 0.12),
-          ),
-        ),
-        const SizedBox(
-          width: 12,
-          height: 12,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFF2A73FF),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/* =========================
-   Latest Reports List
-========================= */
-class _LatestReportsList extends StatelessWidget {
-  final double Function(double) s;
-  final double Function(double) rs;
-  final List<_ReportItem> items;
-  final void Function(_ReportItem item) onTapItem;
-
-  const _LatestReportsList({
-    required this.s,
-    required this.rs,
-    required this.items,
-    required this.onTapItem,
-  });
-
-  Color _statusColor(_ReportStatus status) {
-    if (status == _ReportStatus.pending) return const Color(0xFFB96A00);
-    if (status == _ReportStatus.accepted) return const Color(0xFF1D6F5F);
-    return const Color(0xFF2C8B4E);
-  }
-
-  String _statusLabel(_ReportStatus status) {
-    if (status == _ReportStatus.pending) return "Pending";
-    if (status == _ReportStatus.accepted) return "Accepted";
-    return "Collected";
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(s(12)),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(s(18)),
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 10,
-            color: Color(0x14000000),
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ListView.separated(
-        itemCount: items.length,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        separatorBuilder: (_, _) => Divider(
-          height: rs(14),
-          color: const Color(0xFF000000).withValues(alpha: 0.08),
-        ),
-        itemBuilder: (context, i) {
-          final it = items[i];
-          final sc = _statusColor(it.status);
-
-          return InkWell(
-            borderRadius: BorderRadius.circular(s(14)),
-            onTap: () => onTapItem(it),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: rs(6)),
-              child: Row(
-                children: [
-                  Container(
-                    width: s(44),
-                    height: s(44),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2E746A).withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(s(14)),
-                    ),
-                    child: Icon(
-                      it.icon,
-                      size: s(22),
-                      color: const Color(0xFF2E746A),
-                    ),
-                  ),
-                  SizedBox(width: s(12)),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                it.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: 'Lexend',
-                                  fontSize: s(13),
-                                  fontWeight: FontWeight.w900,
-                                  height: 1.1,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: s(8)),
-                            Text(
-                              it.timeAgo,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontFamily: 'LexendExa',
-                                fontSize: s(9),
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black.withValues(alpha: 0.55),
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: rs(4)),
-                        Text(
-                          "${it.wasteType} • ${it.weight} • ${it.distance}",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'LexendExa',
-                            fontSize: s(10),
-                            fontWeight: FontWeight.w700,
-                            height: 1.1,
-                            color: Colors.black.withValues(alpha: 0.65),
-                          ),
-                        ),
-                        SizedBox(height: rs(4)),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: s(13),
-                              color: Colors.black.withValues(alpha: 0.60),
-                            ),
-                            SizedBox(width: s(4)),
-                            Expanded(
-                              child: Text(
-                                it.location,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: 'LexendExa',
-                                  fontSize: s(10),
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.1,
-                                  color: Colors.black.withValues(alpha: 0.55),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: s(10)),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: s(10),
-                                vertical: rs(6),
-                              ),
-                              decoration: BoxDecoration(
-                                color: sc.withValues(alpha: 0.10),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                _statusLabel(it.status),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: 'LexendExa',
-                                  fontSize: s(9),
-                                  fontWeight: FontWeight.w900,
-                                  color: sc,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: s(6)),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: s(26),
-                    color: Colors.black.withValues(alpha: 0.35),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -1458,480 +833,6 @@ class _SegmentButton extends StatelessWidget {
   }
 }
 
-/* =========================
-   Map painter
-========================= */
-class _SimpleMapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final roadPaint = Paint()
-      ..color = const Color(0xFFD9C85B)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round;
-
-    final roadPaint2 = Paint()
-      ..color = const Color(0xFFE7E1C6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 18
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(
-      Offset(size.width * 0.12, size.height * 0.15),
-      Offset(size.width * 0.95, size.height * 0.52),
-      roadPaint2,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.12, size.height * 0.15),
-      Offset(size.width * 0.95, size.height * 0.52),
-      roadPaint,
-    );
-
-    final street = Paint()
-      ..color = const Color(0xFFBDB7A8).withValues(alpha: 0.45)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6;
-
-    canvas.drawLine(
-      Offset(size.width * 0.08, size.height * 0.78),
-      Offset(size.width * 0.72, size.height * 0.65),
-      street,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.18, size.height * 0.92),
-      Offset(size.width * 0.88, size.height * 0.78),
-      street,
-    );
-
-    final block = Paint()..color = const Color(0xFFE8E6DE);
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width * 0.06,
-        size.height * 0.24,
-        size.width * 0.32,
-        size.height * 0.22,
-      ),
-      block,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width * 0.48,
-        size.height * 0.58,
-        size.width * 0.42,
-        size.height * 0.28,
-      ),
-      block,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _PendingRequestsPage extends StatelessWidget {
-  final Color headerGreen;
-  final Color pillGreen;
-  final List<_PendingRequest> items;
-
-  const _PendingRequestsPage({
-    required this.headerGreen,
-    required this.pillGreen,
-    required this.items,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFE6F1ED),
-      appBar: AppBar(
-        backgroundColor: headerGreen,
-        foregroundColor: Colors.white,
-        title: const Text("Pending Requests"),
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-        itemCount: items.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, i) {
-          final p = items[i];
-          return Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: const [
-                BoxShadow(
-                  blurRadius: 10,
-                  color: Color(0x14000000),
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: headerGreen.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(p.icon, color: headerGreen),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        p.category,
-                        style: const TextStyle(
-                          fontFamily: 'Lexend',
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Estimated weight: ${p.weight}",
-                        style: TextStyle(
-                          fontFamily: 'LexendExa',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black.withValues(alpha: 0.60),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            size: 14,
-                            color: Colors.black.withValues(alpha: 0.60),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              p.location,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontFamily: 'LexendExa',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black.withValues(alpha: 0.55),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFB96A00).withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Text(
-                    "Pending",
-                    style: TextStyle(
-                      fontFamily: 'LexendExa',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFB96A00),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ReportDetailsSheet extends StatelessWidget {
-  final Color headerGreen;
-  final Color pillGreen;
-  final _ReportItem item;
-  final VoidCallback? onAccept;
-  final VoidCallback? onMarkCollected;
-
-  const _ReportDetailsSheet({
-    required this.headerGreen,
-    required this.pillGreen,
-    required this.item,
-    required this.onAccept,
-    required this.onMarkCollected,
-  });
-
-  String get _statusLabel {
-    if (item.status == _ReportStatus.pending) return "Pending";
-    if (item.status == _ReportStatus.accepted) return "Accepted";
-    return "Collected";
-  }
-
-  Color get _statusColor {
-    if (item.status == _ReportStatus.pending) return const Color(0xFFB96A00);
-    if (item.status == _ReportStatus.accepted) return const Color(0xFF1D6F5F);
-    return const Color(0xFF2C8B4E);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final w = mq.size.width;
-    double s(double v) => v * (w / 423.0);
-
-    final showAccept = item.status == _ReportStatus.pending;
-    final showMarkCollected =
-        item.status == _ReportStatus.pending ||
-        item.status == _ReportStatus.accepted;
-
-    return SafeArea(
-      child: Container(
-        margin: EdgeInsets.only(top: s(90)),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE6F1ED),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(s(22)),
-            topRight: Radius.circular(s(22)),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(height: s(10)),
-            Container(
-              width: s(46),
-              height: s(5),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-            SizedBox(height: s(12)),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: s(18)),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "Report Details",
-                      style: TextStyle(
-                        fontFamily: 'Lexend',
-                        fontSize: s(18),
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(999),
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Padding(
-                      padding: EdgeInsets.all(s(6)),
-                      child: Icon(Icons.close_rounded, size: s(20)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: s(12)),
-            Padding(
-              padding: EdgeInsets.fromLTRB(s(18), 0, s(18), s(18)),
-              child: Container(
-                padding: EdgeInsets.all(s(14)),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(s(18)),
-                  boxShadow: const [
-                    BoxShadow(
-                      blurRadius: 10,
-                      color: Color(0x14000000),
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: s(46),
-                          height: s(46),
-                          decoration: BoxDecoration(
-                            color: headerGreen.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(s(16)),
-                          ),
-                          child: Icon(
-                            item.icon,
-                            color: headerGreen,
-                            size: s(22),
-                          ),
-                        ),
-                        SizedBox(width: s(12)),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: 'Lexend',
-                                  fontSize: s(14),
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(height: s(4)),
-                              Text(
-                                "${item.wasteType} • ${item.weight} • ${item.distance}",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: 'LexendExa',
-                                  fontSize: s(10.2),
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black.withValues(alpha: 0.65),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: s(10),
-                            vertical: s(6),
-                          ),
-                          decoration: BoxDecoration(
-                            color: _statusColor.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            _statusLabel,
-                            style: TextStyle(
-                              fontFamily: 'LexendExa',
-                              fontSize: s(10),
-                              fontWeight: FontWeight.w900,
-                              color: _statusColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: s(12)),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: s(16),
-                          color: Colors.black.withValues(alpha: 0.60),
-                        ),
-                        SizedBox(width: s(6)),
-                        Expanded(
-                          child: Text(
-                            item.location,
-                            style: TextStyle(
-                              fontFamily: 'LexendExa',
-                              fontSize: s(11),
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black.withValues(alpha: 0.60),
-                            ),
-                          ),
-                        ),
-                        Text(
-                          item.timeAgo,
-                          style: TextStyle(
-                            fontFamily: 'LexendExa',
-                            fontSize: s(10),
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black.withValues(alpha: 0.50),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (showAccept || showMarkCollected) ...[
-                      SizedBox(height: s(14)),
-                      Row(
-                        children: [
-                          if (showAccept) ...[
-                            Expanded(
-                              child: _ActionButton(
-                                label: "Accept Request",
-                                color: headerGreen,
-                                onTap: onAccept,
-                              ),
-                            ),
-                            SizedBox(width: s(10)),
-                          ],
-                          if (showMarkCollected)
-                            Expanded(
-                              child: _ActionButton(
-                                label: "Mark as Collected",
-                                color: const Color(0xFF2C8B4E),
-                                onTap: onMarkCollected,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final String label;
-  final Color color;
-  final VoidCallback? onTap;
-
-  const _ActionButton({
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Container(
-        height: 46,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'LexendExa',
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _MetricPopup extends StatelessWidget {
   final Color headerGreen;
   final Color pillGreen;
@@ -2060,74 +961,4 @@ class _MetricPopup extends StatelessWidget {
       ),
     );
   }
-}
-
-/* =========================
-   Models
-========================= */
-class _PendingRequest {
-  final String id;
-  final String category;
-  final String weight;
-  final String location;
-  final IconData icon;
-  final _ReportStatus status;
-  final DateTime createdAt;
-
-  _PendingRequest({
-    required this.id,
-    required this.category,
-    required this.weight,
-    required this.location,
-    required this.icon,
-    required this.status,
-    required this.createdAt,
-  });
-}
-
-class _ReportItem {
-  final String id;
-  final String title;
-  final String wasteType;
-  final String weight;
-  final String distance;
-  final String location;
-  final _ReportStatus status;
-  final String timeAgo;
-  final IconData icon;
-
-  _ReportItem({
-    required this.id,
-    required this.title,
-    required this.wasteType,
-    required this.weight,
-    required this.distance,
-    required this.location,
-    required this.status,
-    required this.timeAgo,
-    required this.icon,
-  });
-}
-
-enum _MapPinType { report, station }
-
-class _MapPin {
-  final double x;
-  final double y;
-  final _MapPinType type;
-  final Color color;
-
-  final String condition;
-  final String titleLine;
-  final String distanceLine;
-
-  const _MapPin({
-    required this.x,
-    required this.y,
-    required this.type,
-    required this.color,
-    required this.condition,
-    required this.titleLine,
-    required this.distanceLine,
-  });
 }

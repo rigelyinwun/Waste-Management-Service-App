@@ -54,8 +54,14 @@ class LoginHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: const [
-        Text(
+      children: [
+        Image.asset(
+          'assets/logo.png',
+          height: 80,
+          errorBuilder: (context, error, stackTrace) => const Icon(Icons.recycling, size: 80, color: GlobalCSS.primaryGreen),
+        ),
+        const SizedBox(height: 10),
+        const Text(
           "LOGIN",
           style: TextStyle(
             fontFamily: GlobalCSS.fontMain,

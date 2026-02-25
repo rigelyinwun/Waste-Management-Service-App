@@ -67,12 +67,11 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
             ),
             onPressed: _handleBack,
           ),
-          title: Text(
+          title: const Text(
             "Waste Profile",
             style: TextStyle(
-              fontFamily: 'Lexend',
-              fontSize: s(22),
-              fontWeight: FontWeight.w500,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),

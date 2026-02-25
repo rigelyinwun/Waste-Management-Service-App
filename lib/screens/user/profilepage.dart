@@ -12,7 +12,8 @@ class ProfileStyles {
 }
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final bool showAppBar;
+  const ProfilePage({super.key, this.showAppBar = true});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -139,7 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ProfileStyles.backgroundMint,
-      appBar: _buildAppBar("My Profile"),
+      appBar: widget.showAppBar ? _buildAppBar("My Profile") : null,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -181,8 +182,13 @@ class _ProfilePageState extends State<ProfilePage> {
                               SizedBox(
                                 height: 35,
                                 child: ElevatedButton(
-                                  onPressed: () => Navigator.pushNamed(
-                                      context, '/individual_editprofile'),
+                                  onPressed: () {
+                                    if (_user?.role == 'business' || _user?.role == 'company') {
+                                      Navigator.pushNamed(context, '/business_editprofile');
+                                    } else {
+                                      Navigator.pushNamed(context, '/individual_editprofile');
+                                    }
+                                  },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: ProfileStyles.editBtnGreen,
                                     elevation: 0,

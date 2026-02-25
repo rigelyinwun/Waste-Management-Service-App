@@ -1,5 +1,5 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class SummaryDashboardPage extends StatefulWidget {
   const SummaryDashboardPage({super.key});
@@ -172,24 +172,76 @@ class _SummaryDashboardPageState extends State<SummaryDashboardPage> {
                 padding: EdgeInsets.symmetric(horizontal: s(18)),
                 child: Column(
                   children: [
-                    // Line chart
                     Container(
                       height: rs(230),
                       decoration: BoxDecoration(
                         color: bg,
                         borderRadius: BorderRadius.circular(s(16)),
                       ),
-                      child: CustomPaint(
-                        painter: _LineChartPainter(
-                          red: lineA,
-                          blue: lineB,
-                          yellow: lineC,
+                      child: LineChart(
+                        LineChartData(
+                          gridData: const FlGridData(show: true, drawVerticalLine: false),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 30,
+                                getTitlesWidget: (value, meta) {
+                                  const titles = ["Jan", "Mar", "May", "Jul", "Sep", "Nov"];
+                                  if (value % 1 == 0 && value >= 0 && value < titles.length) {
+                                    return Text(titles[value.toInt()], style: const TextStyle(fontSize: 10));
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ),
+                            leftTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: true, reservedSize: 30),
+                            ),
+                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: lineA.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+                              isCurved: true,
+                              color: const Color(0xFFB4431D),
+                              barWidth: 4,
+                              dotData: const FlDotData(show: false),
+                            ),
+                            LineChartBarData(
+                              spots: lineB.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+                              isCurved: true,
+                              color: const Color(0xFF1E73B8),
+                              barWidth: 4,
+                              dotData: const FlDotData(show: false),
+                            ),
+                            LineChartBarData(
+                              spots: lineC.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+                              isCurved: true,
+                              color: const Color(0xFFF2C100),
+                              barWidth: 4,
+                              dotData: const FlDotData(show: false),
+                            ),
+                          ],
                         ),
-                        child: const SizedBox.expand(),
                       ),
                     ),
+                    SizedBox(height: rs(10)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _LegendItem(color: const Color(0xFFB4431D), label: "Plastic", fs: fs),
+                        SizedBox(width: s(10)),
+                        _LegendItem(color: const Color(0xFF1E73B8), label: "Metal", fs: fs),
+                        SizedBox(width: s(10)),
+                        _LegendItem(color: const Color(0xFFF2C100), label: "Textiles", fs: fs),
+                      ],
+                    ),
                     SizedBox(height: rs(14)),
-
+ 
                     // Pie chart
                     Container(
                       height: rs(230),
@@ -205,14 +257,33 @@ class _SummaryDashboardPageState extends State<SummaryDashboardPage> {
                           ),
                         ],
                       ),
-                      child: CustomPaint(
-                        painter: _PiePainter(
-                          slices: pie,
-                          highlightLabel: "Plastic",
-                          highlightText: "66%",
+                      child: PieChart(
+                        PieChartData(
+                          sections: pie.map((s) => PieChartSectionData(
+                            color: s.color,
+                            value: s.value * 100,
+                            title: '${(s.value * 100).toInt()}%',
+                            radius: 50,
+                            titleStyle: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          )).toList(),
+                          centerSpaceRadius: 40,
                         ),
-                        child: const SizedBox.expand(),
                       ),
+                    ),
+                    SizedBox(height: rs(10)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _LegendItem(color: const Color(0xFFD65B5B), label: "Plastic", fs: fs),
+                        SizedBox(width: s(10)),
+                        _LegendItem(color: const Color(0xFFFFC46B), label: "Paper", fs: fs),
+                        SizedBox(width: s(10)),
+                        _LegendItem(color: const Color(0xFFA9D76B), label: "Glass", fs: fs),
+                      ],
                     ),
                   ],
                 ),
@@ -644,106 +715,32 @@ class _NearbyCard extends StatelessWidget {
   }
 }
 
-/* ----------------------------- Charts ----------------------------- */
-
-class _LineChartPainter extends CustomPainter {
-  _LineChartPainter({
-    required this.red,
-    required this.blue,
-    required this.yellow,
-  });
-
-  final List<double> red;
-  final List<double> blue;
-  final List<double> yellow;
+class _LegendItem extends StatelessWidget {
+  const _LegendItem({required this.color, required this.label, required this.fs});
+  final Color color;
+  final String label;
+  final _FS fs;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
-
-    final axisPaint = Paint()
-      ..color = const Color(0xFF1F1F1F)
-      ..strokeWidth = 7
-      ..strokeCap = StrokeCap.round;
-
-    // Axes
-    final origin = Offset(size.width * 0.12, size.height * 0.86);
-    final yTop = Offset(origin.dx, size.height * 0.12);
-    final xRight = Offset(size.width * 0.92, origin.dy);
-
-    canvas.drawLine(origin, yTop, axisPaint);
-    canvas.drawLine(yTop, Offset(yTop.dx - 18, yTop.dy + 22), axisPaint);
-    canvas.drawLine(yTop, Offset(yTop.dx + 18, yTop.dy + 22), axisPaint);
-
-    canvas.drawLine(origin, xRight, axisPaint);
-    canvas.drawLine(xRight, Offset(xRight.dx - 22, xRight.dy - 18), axisPaint);
-    canvas.drawLine(xRight, Offset(xRight.dx - 22, xRight.dy + 18), axisPaint);
-
-    // Plot area
-    final left = origin.dx + 14;
-    final right = size.width * 0.90;
-    final top = size.height * 0.16;
-    final bottom = origin.dy - 14;
-
-    final plotW = right - left;
-    final plotH = bottom - top;
-    if (plotW <= 0 || plotH <= 0) return;
-
-    // Shared min/max across all series
-    final all = <double>[...red, ...blue, ...yellow];
-    if (all.isEmpty) return;
-
-    double minV = all.reduce(math.min);
-    double maxV = all.reduce(math.max);
-
-    final pad = (maxV - minV == 0) ? 1.0 : (maxV - minV) * 0.15;
-    minV -= pad;
-    maxV += pad;
-
-    double mapY(double v) {
-      final denom = (maxV - minV == 0) ? 1.0 : (maxV - minV);
-      final t = (v - minV) / denom;
-      return bottom - plotH * t;
-    }
-
-    Path buildPath(List<double> vals) {
-      final path = Path();
-      if (vals.length < 2) return path;
-
-      for (int i = 0; i < vals.length; i++) {
-        final t = i / (vals.length - 1);
-        final x = left + plotW * t;
-        final y = mapY(vals[i]);
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-      }
-      return path;
-    }
-
-    void drawSeries(List<double> vals, Color color) {
-      if (vals.length < 2) return;
-      final p = Paint()
-        ..color = color
-        ..strokeWidth = 10
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round;
-      canvas.drawPath(buildPath(vals), p);
-    }
-
-    drawSeries(red, const Color(0xFFB4431D));
-    drawSeries(blue, const Color(0xFF1E73B8));
-    drawSeries(yellow, const Color(0xFFF2C100));
-  }
-
-  @override
-  bool shouldRepaint(covariant _LineChartPainter oldDelegate) {
-    return oldDelegate.red != red ||
-        oldDelegate.blue != blue ||
-        oldDelegate.yellow != yellow;
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: "Lexend",
+            fontSize: fs(12, min: 10, max: 14),
+            color: Colors.black,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -756,69 +753,4 @@ class _PieSlice {
     required this.value,
     required this.color,
   });
-}
-
-class _PiePainter extends CustomPainter {
-  _PiePainter({
-    required this.slices,
-    required this.highlightLabel,
-    required this.highlightText,
-  });
-
-  final List<_PieSlice> slices;
-  final String highlightLabel;
-  final String highlightText;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.shortestSide * 0.42;
-
-    final gapPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 8
-      ..style = PaintingStyle.stroke;
-
-    double start = -math.pi / 2;
-
-    for (final s in slices) {
-      final sweep = s.value * math.pi * 2;
-      final rect = Rect.fromCircle(center: center, radius: radius);
-
-      final paint = Paint()
-        ..color = s.color
-        ..style = PaintingStyle.fill;
-
-      canvas.drawArc(rect, start, sweep, true, paint);
-      canvas.drawArc(rect, start, 0.001, true, gapPaint);
-
-      start += sweep;
-    }
-
-    canvas.drawCircle(center, radius, gapPaint);
-
-    final tp = TextPainter(
-      text: TextSpan(
-        text: "$highlightLabel\n$highlightText",
-        style: const TextStyle(
-          fontFamily: "Lexend",
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-          height: 1.1,
-        ),
-      ),
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: size.width);
-
-    final pos = Offset(
-      center.dx - tp.width * 0.55,
-      center.dy - tp.height * 0.2,
-    );
-    tp.paint(canvas, pos);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
