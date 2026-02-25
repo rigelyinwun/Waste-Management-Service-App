@@ -16,7 +16,6 @@ class _AdminHomePageState extends State<AdminHomePage> {
   static const Color headerGreen = Color(0xFF2E746A);
   static const Color pillGreen = Color(0xFF4B9E92);
 
-  int _navIndex = 0;
   _SummaryRange _range = _SummaryRange.week;
 
   int? _selectedPinIndex;
@@ -228,45 +227,6 @@ class _AdminHomePageState extends State<AdminHomePage> {
       distanceLine: "Distance: 1.1km",
     ),
   ];
-
-  // ===== Bottom nav tap =====
-  void _onNavTap(int i) {
-    if (i == _navIndex) return;
-
-    setState(() => _navIndex = i);
-
-    switch (i) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/company');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/company/reports');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/company/summary-dashboard');
-        break;
-      case 3:
-        Navigator.pushReplacementNamed(context, '/company/locations');
-        break;
-      case 4:
-        Navigator.pushReplacementNamed(context, '/company/profile');
-        break;
-    }
-  }
-
-  // ===== Actions / Nav =====
-  void _openNotificationsSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _NotificationsSheet(
-        headerGreen: headerGreen,
-        pillGreen: pillGreen,
-        bg: bg,
-      ),
-    );
-  }
 
   void _openPendingRequestsPage() {
     Navigator.of(context).push(
@@ -1568,188 +1528,6 @@ class _SimpleMapPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/* =========================
-   Sheets / Pages
-   CHANGE:
-   - Notifications sheet: NO Close button, tap anywhere to close
-   - Metric popup: NO Close button, tap anywhere to close
-========================= */
-
-class _NotificationsSheet extends StatelessWidget {
-  final Color headerGreen;
-  final Color pillGreen;
-  final Color bg;
-
-  const _NotificationsSheet({
-    required this.headerGreen,
-    required this.pillGreen,
-    required this.bg,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final w = mq.size.width;
-    double s(double v) => v * (w / 423.0);
-
-    final notifications = <_NotificationItem>[
-      _NotificationItem(
-        title: "New report submitted",
-        subtitle: "Furniture • PV12 • 0.3km",
-        time: "12m ago",
-        icon: Icons.notifications_active_outlined,
-      ),
-      _NotificationItem(
-        title: "Request accepted",
-        subtitle: "Metal • Taman Melati",
-        time: "3h ago",
-        icon: Icons.check_circle_outline,
-      ),
-      _NotificationItem(
-        title: "Collected completed",
-        subtitle: "E-waste • Gombak",
-        time: "6h ago",
-        icon: Icons.verified_outlined,
-      ),
-    ];
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => Navigator.of(context).pop(),
-      child: SafeArea(
-        child: Container(
-          margin: EdgeInsets.only(top: s(80)),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(s(22)),
-              topRight: Radius.circular(s(22)),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(height: s(10)),
-              Container(
-                width: s(46),
-                height: s(5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              SizedBox(height: s(12)),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: s(18)),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        "Notifications",
-                        style: TextStyle(
-                          fontFamily: 'Lexend',
-                          fontSize: s(18),
-                          fontWeight: FontWeight.w900,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: s(10)),
-              Padding(
-                padding: EdgeInsets.fromLTRB(s(18), 0, s(18), s(18)),
-                child: Column(
-                  children: [
-                    for (final n in notifications) ...[
-                      Container(
-                        padding: EdgeInsets.all(s(14)),
-                        margin: EdgeInsets.only(bottom: s(10)),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(s(18)),
-                          boxShadow: const [
-                            BoxShadow(
-                              blurRadius: 10,
-                              color: Color(0x14000000),
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: s(44),
-                              height: s(44),
-                              decoration: BoxDecoration(
-                                color: headerGreen.withValues(alpha: 0.10),
-                                borderRadius: BorderRadius.circular(s(14)),
-                              ),
-                              child: Icon(
-                                n.icon,
-                                color: headerGreen,
-                                size: s(22),
-                              ),
-                            ),
-                            SizedBox(width: s(12)),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    n.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontFamily: 'Lexend',
-                                      fontSize: s(12.8),
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  SizedBox(height: s(4)),
-                                  Text(
-                                    n.subtitle,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontFamily: 'LexendExa',
-                                      fontSize: s(10),
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.black.withValues(
-                                        alpha: 0.60,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: s(10)),
-                            Text(
-                              n.time,
-                              style: TextStyle(
-                                fontFamily: 'LexendExa',
-                                fontSize: s(9.2),
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black.withValues(alpha: 0.50),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _PendingRequestsPage extends StatelessWidget {
   final Color headerGreen;
   final Color pillGreen;
@@ -2351,19 +2129,5 @@ class _MapPin {
     required this.condition,
     required this.titleLine,
     required this.distanceLine,
-  });
-}
-
-class _NotificationItem {
-  final String title;
-  final String subtitle;
-  final String time;
-  final IconData icon;
-
-  _NotificationItem({
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.icon,
   });
 }

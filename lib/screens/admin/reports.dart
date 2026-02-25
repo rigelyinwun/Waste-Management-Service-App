@@ -14,8 +14,6 @@ class ReportsPage extends StatefulWidget {
 class _ReportsPageState extends State<ReportsPage> {
   final ReportService _reportService = ReportService();
   String _searchQuery = "";
-  final int _pageSize = 10;
-  int _pageIndex = 0;
 
   void _handleBack() {
     if (Navigator.of(context).canPop()) {

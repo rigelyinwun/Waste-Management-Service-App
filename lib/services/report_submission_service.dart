@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:typed_data';
 import '../models/report_model.dart';
 import '../services/report_service.dart';
-import '../services/image_service.dart';
 import '../services/ai_service.dart';
 import '../services/company_matching_service.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -11,7 +10,6 @@ import 'dart:convert';
 class ReportSubmissionService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ReportService _reportService = ReportService();
-  final ImageService _imageService = ImageService();
   final AIService _aiService = AIService();
   final CompanyMatchingService _matchingService =
       CompanyMatchingService();

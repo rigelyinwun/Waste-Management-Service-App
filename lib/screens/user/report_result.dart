@@ -232,16 +232,16 @@ class ReportResultPage extends StatelessWidget {
       backgroundColor: const Color(0xFF2E5E4E),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
       builder: (context) => FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('companies').doc(report.matchedCompanyId).get(),
+        future: FirebaseFirestore.instance.collection('users').doc(report.matchedCompanyId).get(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Colors.orange));
           }
           
           final data = snapshot.data?.data() as Map<String, dynamic>? ?? {};
-          final name = data['name'] ?? 'Unknown Company';
-          final address = data['address'] ?? 'N/A';
-          final phone = data['phone'] ?? 'N/A';
+          final name = data['companyName'] ?? data['username'] ?? 'Unknown Company';
+          final address = (data['serviceAreas'] as List?)?.join(", ") ?? 'N/A';
+          final phone = data['email'] ?? 'N/A'; // Using email as fallback for contact
 
           return Padding(
             padding: const EdgeInsets.all(25.0),

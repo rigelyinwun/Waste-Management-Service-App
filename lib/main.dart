@@ -12,7 +12,7 @@ import '../../screens/user/tnc.dart';
 import '../../screens/auth/individual_signup.dart';
 import '../../screens/auth/business_signup.dart';
 import '../../screens/user/individual_editprofile.dart';
-import '../../screens/user/business_editprofile.dart';
+import '../../screens/admin/business_editprofile.dart';
 import '../../screens/user/privacypolicy.dart';
 import '../../screens/user/rating.dart';
 import '../../screens/user/feedback.dart';

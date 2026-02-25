@@ -30,7 +30,12 @@ class AIService {
     "recommendedTransport": "string",
     "estimatedCost": number,
     "hazardLevel": "low | medium | high",
-    "isRecyclable": boolean
+    "isRecyclable": boolean,
+    "recyclabilityLevel": "string (e.g., High, Medium, Low)",
+    "pickupPriority": "string (e.g., Immediate, Normal, Flexible)",
+    "collectionEffort": "string (e.g., Low, Medium, High)",
+    "logistics": "string (e.g., specialized handling required, standard pickup)",
+    "materialTag": "string (e.g., Plastic-PET, Metal-Aluminum)"
   }
 
   Description:

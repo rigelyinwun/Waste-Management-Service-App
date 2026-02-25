@@ -18,8 +18,6 @@ class _SummaryDashboardPageState extends State<SummaryDashboardPage> {
   String _nearbyRange = "Weekly";
   final List<String> _nearbyRanges = const ["Weekly", "Monthly", "Yearly"];
 
-  int _navIndex = 2;
-
   final int totalRequests = 120; // total report
   final int totalCollected = 89;
 
@@ -54,7 +52,6 @@ class _SummaryDashboardPageState extends State<SummaryDashboardPage> {
         (s(v)).clamp(min, max).toDouble();
 
     const bg = Color(0xFFE6F1ED);
-    const headerGreen = Color(0xFF2E746A);
     const pillGreen = Color(0xFF4B9E92);
     const divider = Color(0xFF1F1F1F);
 
@@ -337,10 +334,7 @@ class _SummaryDashboardPageState extends State<SummaryDashboardPage> {
             ],
           ),
         ),
-      ),
-
-    );
-  }
+      );
   }
 
   Future<void> _pickDate({required bool isStart}) async {

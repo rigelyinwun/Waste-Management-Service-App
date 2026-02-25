@@ -243,9 +243,7 @@ class _WasteListPageState extends State<WasteListPage> {
             ),
             const SizedBox(height: 15),
             ElevatedButton(
-              onPressed: () async {
-                final message = _requestController.text.trim();
-                
+              onPressed: () async {            
                 // Send notification to the owner
                 await _notificationService.sendNotification(
                   NotificationModel(

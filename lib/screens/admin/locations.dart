@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:math';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../services/report_service.dart';
 import '../../models/report_model.dart';
@@ -20,9 +22,6 @@ class _LocationScreenState extends State<LocationsPage> {
   static const Color textDark = Color(0xFF1E3B36);
   static const Color subtleText = Color(0xFF5B7B74);
   static const Color divider = Color(0xFFA9C8BE);
-
-  // ---- bottom nav ----
-  int _navIndex = 3;
 
   // ---------- Map ----------
   final Completer<GoogleMapController> _mapController = Completer();
@@ -255,7 +254,7 @@ class _LocationScreenState extends State<LocationsPage> {
     // Firestore reports
     if (_selectedTypes.contains(_PlaceType.wasteLocation)) {
       for (final r in _firestoreReports) {
-        final pos = LatLng(r.latitude, r.longitude);
+        final pos = LatLng(r.location.latitude, r.location.longitude);
         final km = _haversineKm(_userLocation, pos);
         if (km > _distanceKm) continue;
 
@@ -1042,10 +1041,7 @@ class _LocationScreenState extends State<LocationsPage> {
             ],
           ),
         ),
-
-        ),
-      ),
-    );
+      );
   }
 
   String _categoryLabel(Set<_PlaceType> types) {

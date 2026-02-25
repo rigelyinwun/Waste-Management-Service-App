@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
+
 
 class GlobalCSS {
   static const Color primaryGreen = Color(0xFF2E6153);
@@ -129,6 +131,8 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
+
   bool _isLoading = false;
 
   Future<void> _handleLogin() async {
@@ -145,9 +149,22 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      await _authService.loginWithEmail(email: email, password: password);
+      final userCredential = await _authService.loginWithEmail(email: email, password: password);
+      
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/base');
+        final userProfile = await _userService.fetchUserProfile(userCredential.user!.uid);
+        
+        if (userProfile != null) {
+          final role = userProfile.role.toLowerCase();
+          if (role == 'admin' || role == 'company' || role == 'business') {
+            Navigator.pushReplacementNamed(context, '/admin_base');
+          } else {
+            Navigator.pushReplacementNamed(context, '/base');
+          }
+        } else {
+          // Fallback if profile not found
+          Navigator.pushReplacementNamed(context, '/base');
+        }
       }
     } catch (e) {
       if (mounted) {

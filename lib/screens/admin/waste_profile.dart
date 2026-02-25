@@ -1,7 +1,6 @@
+import 'package:flutter/material.dart';
 import '../../models/report_model.dart';
-import '../../models/ai_analysis_model.dart';
 import 'dart:convert';
-import 'package:intl/intl.dart';
 
 class WasteProfilePage extends StatefulWidget {
   final Report report;
@@ -24,7 +23,7 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
   @override
   void initState() {
     super.initState();
-    _estimatedCostRm = _parseCost(widget.report.aiAnalysis?.estimatedCost ?? "0");
+    _estimatedCostRm = _parseCost((widget.report.aiAnalysis?.estimatedCost ?? "0").toString());
     _status = _CollectStatus.none; // Will need to be synced with backend status later
   }
 
@@ -653,10 +652,4 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
       context,
     ).showSnackBar(const SnackBar(content: Text("Marked as collected.")));
   }
-}
-
-class _NavItem {
-  final IconData icon;
-  final String route;
-  const _NavItem({required this.icon, required this.route});
 }
