@@ -220,7 +220,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: Icons.language, title: "Language", onTap: () {}),
                   SettingsTile(
                     icon: Icons.history_edu,
-                    title: "History Report",
+                    title: _user?.role == 'business'
+                        ? "Accepted Requests"
+                        : "History Report",
                     onTap: () => Navigator.pushNamed(context, '/historyreport'),
                   ),
                   SettingsTile(

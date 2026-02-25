@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/report_service.dart';
+import '../../services/user_service.dart';
 import '../../models/report_model.dart';
+import '../../models/user_model.dart';
 import 'package:intl/intl.dart';
 import 'report_result.dart';
 
@@ -15,10 +17,35 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
   String selectedFilter = "All";
   final AuthService _authService = AuthService();
   final ReportService _reportService = ReportService();
+  final UserService _userService = UserService();
+  AppUser? _userProfile;
+  bool _loadingRole = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      final profile = await _userService.fetchUserProfile(user.uid);
+      if (mounted) {
+        setState(() {
+          _userProfile = profile;
+          _loadingRole = false;
+        });
+      }
+    } else {
+      if (mounted) setState(() => _loadingRole = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = _authService.currentUser;
+    final isBusiness = _userProfile?.role == 'business';
 
     return Scaffold(
       backgroundColor: const Color(0xFFD3E6DB),
@@ -27,74 +54,78 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          "History Report",
-          style: TextStyle(
+        title: Text(
+          isBusiness ? "Accepted Requests" : "History Report",
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
       ),
-      body: Column(
-        children: [
-          // Filter Chips
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  const SizedBox(width: 15),
-                  _buildFilterChip("All"),
-                  _buildFilterChip("Completed"),
-                  _buildFilterChip("Pending"),
-                  _buildFilterChip("Cancelled"),
-                ],
-              ),
-            ),
-          ),
-
-          Expanded(
-            child: user == null
-                ? const Center(child: Text("Please login to see history."))
-                : StreamBuilder<List<Report>>(
-                    stream: _reportService.getReportsByUser(user.uid),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return Center(
-                          child: Text("Error loading reports: ${snapshot.error}"),
-                        );
-                      }
-
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Center(child: Text("No records found."));
-                      }
-
-                      final reports = snapshot.data!.where((report) {
-                        if (selectedFilter == "All") return true;
-                        return report.status.toLowerCase() ==
-                            selectedFilter.toLowerCase();
-                      }).toList();
-
-                      if (reports.isEmpty) {
-                        return const Center(child: Text("No matching records."));
-                      }
-
-                      return ListView.builder(
-                        itemCount: reports.length,
-                        itemBuilder: (context, index) {
-                          final report = reports[index];
-                          return _buildReportCard(context, report);
-                        },
-                      );
-                    },
+      body: _loadingRole
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                // Filter Chips
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 15),
+                        _buildFilterChip("All"),
+                        _buildFilterChip("Completed"),
+                        _buildFilterChip("Pending"),
+                        _buildFilterChip("Cancelled"),
+                      ],
+                    ),
                   ),
-          ),
-        ],
-      ),
+                ),
+
+                Expanded(
+                  child: user == null
+                      ? const Center(child: Text("Please login to see data."))
+                      : StreamBuilder<List<Report>>(
+                          stream: isBusiness
+                              ? _reportService.getReportsByCompany(user.uid)
+                              : _reportService.getReportsByUser(user.uid),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasError) {
+                              return Center(
+                                child: Text("Error loading reports: ${snapshot.error}"),
+                              );
+                            }
+
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return const Center(child: Text("No records found."));
+                            }
+
+                            final reports = snapshot.data!.where((report) {
+                              if (selectedFilter == "All") return true;
+                              return report.status.toLowerCase() ==
+                                  selectedFilter.toLowerCase();
+                            }).toList();
+
+                            if (reports.isEmpty) {
+                              return const Center(child: Text("No matching records."));
+                            }
+
+                            return ListView.builder(
+                              itemCount: reports.length,
+                              itemBuilder: (context, index) {
+                                final report = reports[index];
+                                return _buildReportCard(context, report);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
     );
   }
 

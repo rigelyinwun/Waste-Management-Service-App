@@ -21,6 +21,7 @@ import '../../screens/user/successpage.dart';
 import '../../screens/user/report_result.dart';
 import '../../screens/user/wastelist.dart';
 import '../../screens/user/volunteercollected.dart';
+import '../../screens/admin/admin_base.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +56,7 @@ class MyApp extends StatelessWidget {
         '/notification': (context) => const NotificationPage(),
         '/historyreport': (context) => const HistoryReportPage(),
         '/base': (context) => const MainBasePage(),
+        '/admin_base': (context) => const AdminBasePage(),
         '/successpage': (context) => const SubmissionSuccessPage(),
         '/report_result': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
