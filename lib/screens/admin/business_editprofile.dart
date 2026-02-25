@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/user_service.dart';
-import '../../models/user_model.dart';
 
 class BusinessEditStyles {
   // ... (keeping existing styles)
@@ -244,7 +243,7 @@ class _EditProfileBusinessPageState extends State<EditProfileBusinessPage> {
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
         child: DropdownButtonHideUnderline(
           child: DropdownButtonFormField<String>(
-            value: currentVal,
+            initialValue: currentVal,
             hint: Text(hint, style: TextStyle(color: Colors.black.withOpacity(0.2), fontWeight: FontWeight.bold)),
             decoration: const InputDecoration(border: InputBorder.none),
             items: items.map((String item) {

@@ -226,7 +226,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: Icons.language, title: "Language", onTap: () {}),
                   SettingsTile(
                     icon: Icons.history_edu,
-                    title: _user?.role == 'business'
+                    title: (_user?.role.toLowerCase() == 'business' || 
+                            _user?.role.toLowerCase() == 'company' || _user?.role.toLowerCase() == 'admin')
                         ? "Accepted Requests"
                         : "History Report",
                     onTap: () => Navigator.pushNamed(context, '/historyreport'),
@@ -292,7 +293,7 @@ class SettingsTile extends StatelessWidget {
           ? Switch(
               value: false,
               onChanged: (v) {},
-              activeColor: ProfileStyles.headerTeal)
+              activeThumbColor: ProfileStyles.headerTeal)
           : const Icon(Icons.arrow_forward_ios, color: Colors.black26, size: 16),
       onTap: onTap,
     );

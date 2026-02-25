@@ -45,7 +45,8 @@ class _HistoryReportPageState extends State<HistoryReportPage> {
   @override
   Widget build(BuildContext context) {
     final user = _authService.currentUser;
-    final isBusiness = _userProfile?.role == 'business';
+    final role = _userProfile?.role.toLowerCase();
+    final isBusiness = role == 'business' || role == 'company';
 
     return Scaffold(
       backgroundColor: const Color(0xFFD3E6DB),

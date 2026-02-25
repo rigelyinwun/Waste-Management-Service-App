@@ -23,6 +23,11 @@ class _ReportsPageState extends State<ReportsPage> {
   AppUser? _currentUser;
   bool _isLoadingUser = true;
 
+  // Filter state
+  String? _selectedCategory;
+  String? _selectedStatus;
+  DateTime? _selectedDate;
+
   @override
   void initState() {
     super.initState();
@@ -86,6 +91,15 @@ class _ReportsPageState extends State<ReportsPage> {
                   decoration: InputDecoration(
                     hintText: "Search reports...",
                     prefixIcon: const Icon(Icons.search),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        Icons.tune,
+                        color: (_selectedCategory != null || _selectedStatus != null || _selectedDate != null)
+                            ? headerGreen
+                            : Colors.grey,
+                      ),
+                      onPressed: _openFilterDialog,
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -100,7 +114,9 @@ class _ReportsPageState extends State<ReportsPage> {
                 child: _isLoadingUser 
                   ? const Center(child: CircularProgressIndicator())
                   : StreamBuilder<List<Report>>(
-                  stream: _currentUser?.role == 'business'
+                  stream: (_currentUser?.role.toLowerCase() == 'business' || 
+                           _currentUser?.role.toLowerCase() == 'company' || 
+                           _currentUser?.role.toLowerCase() == 'admin')
                       ? _reportService.getReportsByCompany(_currentUser!.uid)
                       : _reportService.getAllReports(),
                   builder: (context, snapshot) {
@@ -112,10 +128,36 @@ class _ReportsPageState extends State<ReportsPage> {
                     }
 
                     final filtered = snapshot.data!.where((r) {
-                      if (_searchQuery.isEmpty) return true;
-                      final query = _searchQuery.toLowerCase();
-                      return r.description.toLowerCase().contains(query) ||
-                          (r.aiAnalysis?.category.toLowerCase().contains(query) ?? false);
+                      // Search Query Filter
+                      bool matchesSearch = true;
+                      if (_searchQuery.isNotEmpty) {
+                        final query = _searchQuery.toLowerCase();
+                        matchesSearch = r.description.toLowerCase().contains(query) ||
+                            (r.aiAnalysis?.category.toLowerCase().contains(query) ?? false);
+                      }
+                      if (!matchesSearch) return false;
+
+                      // Category Filter
+                      if (_selectedCategory != null && r.aiAnalysis?.category != _selectedCategory) {
+                        return false;
+                      }
+
+                      // Status Filter
+                      if (_selectedStatus != null && r.status != _selectedStatus?.toLowerCase()) {
+                        return false;
+                      }
+
+                      // Date Filter
+                      if (_selectedDate != null) {
+                        final reportDate = r.createdAt.toDate();
+                        if (reportDate.year != _selectedDate!.year ||
+                            reportDate.month != _selectedDate!.month ||
+                            reportDate.day != _selectedDate!.day) {
+                          return false;
+                        }
+                      }
+
+                      return true;
                     }).toList();
 
                     if (filtered.isEmpty) {
@@ -155,6 +197,25 @@ class _ReportsPageState extends State<ReportsPage> {
         ),
       ),
     );
+  }
+
+  void _openFilterDialog() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => _FilterDialog(
+        initialCategory: _selectedCategory,
+        initialStatus: _selectedStatus,
+        initialDate: _selectedDate,
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _selectedCategory = result['category'];
+        _selectedStatus = result['status'];
+        _selectedDate = result['date'];
+      });
+    }
   }
 
   void _handleReject(Report r) async {
@@ -276,6 +337,152 @@ class ReportCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterDialog extends StatefulWidget {
+  final String? initialCategory;
+  final String? initialStatus;
+  final DateTime? initialDate;
+
+  const _FilterDialog({
+    this.initialCategory,
+    this.initialStatus,
+    this.initialDate,
+  });
+
+  @override
+  State<_FilterDialog> createState() => _FilterDialogState();
+}
+
+class _FilterDialogState extends State<_FilterDialog> {
+  String? _category;
+  String? _status;
+  DateTime? _date;
+
+  final List<String> _categories = ["Metal", "Paper-based", "Cloth", "Furniture", "E-Waste", "Plastic", "Glass"];
+  final List<String> _statuses = ["Pending", "Approved", "Collected", "Rejected"];
+
+  @override
+  void initState() {
+    super.initState();
+    _category = widget.initialCategory;
+    _status = widget.initialStatus;
+    _date = widget.initialDate;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const headerGreen = Color(0xFF2E746A);
+    const cardBg = Color(0xFFD3E6DB);
+
+    return Dialog(
+      backgroundColor: cardBg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Filters",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: headerGreen, fontFamily: "Lexend"),
+                ),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Text("Category", style: TextStyle(fontWeight: FontWeight.bold, fontFamily: "Lexend")),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+              child: DropdownButton<String?>(
+                value: _category,
+                isExpanded: true,
+                underline: const SizedBox(),
+                hint: const Text("All Categories"),
+                items: [
+                  const DropdownMenuItem<String?>(value: null, child: Text("All Categories")),
+                  ..._categories.map((c) => DropdownMenuItem(value: c, child: Text(c))),
+                ],
+                onChanged: (v) => setState(() => _category = v),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text("Status", style: TextStyle(fontWeight: FontWeight.bold, fontFamily: "Lexend")),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+              child: DropdownButton<String?>(
+                value: _status,
+                isExpanded: true,
+                underline: const SizedBox(),
+                hint: const Text("All Statuses"),
+                items: [
+                  const DropdownMenuItem<String?>(value: null, child: Text("All Statuses")),
+                  ..._statuses.map((s) => DropdownMenuItem(value: s, child: Text(s))),
+                ],
+                onChanged: (v) => setState(() => _status = v),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text("Date", style: TextStyle(fontWeight: FontWeight.bold, fontFamily: "Lexend")),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _date ?? DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2101),
+                );
+                if (picked != null) setState(() => _date = picked);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                width: double.infinity,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                child: Text(
+                  _date == null ? "Select Date" : "${_date!.day}/${_date!.month}/${_date!.year}",
+                  style: TextStyle(color: _date == null ? Colors.grey[600] : Colors.black),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _category = null;
+                        _status = null;
+                        _date = null;
+                      });
+                    },
+                    child: const Text("Reset"),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: headerGreen),
+                    onPressed: () => Navigator.pop(context, {'category': _category, 'status': _status, 'date': _date}),
+                    child: const Text("Apply", style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }

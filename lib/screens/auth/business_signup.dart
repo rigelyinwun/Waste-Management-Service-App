@@ -22,7 +22,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
   final UserService _userService = UserService();
   bool _isLoading = false;
 
-  List<String> _selectedCategories = [];
+  final List<String> _selectedCategories = [];
   String? _selectedArea;
 
   final List<String> _categories = [
@@ -346,7 +346,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
             ),
           ),
           DropdownButtonFormField<String>(
-            value: selectedValue,
+            initialValue: selectedValue,
             items: items
                 .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                 .toList(),

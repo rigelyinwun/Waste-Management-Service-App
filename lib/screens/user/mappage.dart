@@ -99,7 +99,8 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _loadMarkers() async {
-    final isAdmin = _currentUserProfile?.role == 'business' || _currentUserProfile?.role == 'admin';
+    final role = _currentUserProfile?.role.toLowerCase();
+    final isAdmin = role == 'business' || role == 'company' || role == 'admin';
     
     // Load Waste Reports (RED Markers)
     Query wasteQuery = FirebaseFirestore.instance.collection('reports');
@@ -127,7 +128,7 @@ class _MapPageState extends State<MapPage> {
     // Load Dumping Stations (GREEN Markers)
     final stationsSnapshot = await FirebaseFirestore.instance.collection('dumping_stations').get();
     final stationMarkers = stationsSnapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data();
       final GeoPoint? location = data['location'];
       if (location == null) return null;
 

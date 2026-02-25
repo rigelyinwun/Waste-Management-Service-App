@@ -3,7 +3,7 @@ import 'individual_signup.dart';
 import 'business_signup.dart';
 
 class SignUpPage extends StatelessWidget {
-  const SignUpPage({Key? key}) : super(key: key);
+  const SignUpPage({super.key});
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;

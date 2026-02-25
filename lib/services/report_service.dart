@@ -55,8 +55,10 @@ class ReportService {
         .where('matchedCompanyId', isEqualTo: companyId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Report.fromFirestore(doc)).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Report.fromFirestore(doc))
+            .where((report) => report.status != 'rejected')
+            .toList());
   }
 
   Stream<List<Report>> getPublicReports() {

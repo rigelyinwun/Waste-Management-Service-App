@@ -287,7 +287,7 @@ class _ReportPageState extends State<ReportPage> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             Switch(
                 value: isPublic,
-                activeColor: const Color(0xFF387664),
+                activeThumbColor: const Color(0xFF387664),
                 onChanged: (v) => setState(() => isPublic = v))
           ]);
 

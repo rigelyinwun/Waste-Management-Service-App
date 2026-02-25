@@ -23,7 +23,6 @@ enum _SummaryRange { week, month, year }
 
 class _AdminHomePageState extends State<AdminHomePage> {
   static const Color bg = Color(0xFFE6F1ED);
-  static const Color headerGreen = Color(0xFF2E746A);
   static const Color pillGreen = Color(0xFF4B9E92);
 
   final AuthService _authService = AuthService();
@@ -85,7 +84,12 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
   void _loadData() {
     // Listen to reports
-    _reportService.getUnmatchedReports().listen((reports) {
+    final role = _currentUserProfile?.role.toLowerCase();
+    final reportStream = (role == 'business' || role == 'company' || role == 'admin')
+        ? _reportService.getReportsByCompany(_currentUserProfile!.uid)
+        : _reportService.getUnmatchedReports();
+
+    reportStream.listen((reports) {
       if (mounted) {
         setState(() {
           _allReports = reports;
@@ -135,21 +139,19 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
     // Stations (Green)
     for (var station in _allStations) {
-      if (station.location is GeoPoint) {
-        final gp = station.location as GeoPoint;
-        newMarkers.add(
-          Marker(
-            markerId: MarkerId("station_${station.stationId}"),
-            position: LatLng(gp.latitude, gp.longitude),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-            infoWindow: InfoWindow(
-              title: "Dumping Station",
-              snippet: station.categories.join(", "),
-            ),
+      final gp = station.location;
+      newMarkers.add(
+        Marker(
+          markerId: MarkerId("station_${station.stationId}"),
+          position: LatLng(gp.latitude, gp.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          infoWindow: InfoWindow(
+            title: "Dumping Station",
+            snippet: station.categories.join(", "),
           ),
-        );
-      }
-    }
+        ),
+      );
+        }
 
     setState(() {
       _markers.clear();
@@ -157,37 +159,16 @@ class _AdminHomePageState extends State<AdminHomePage> {
     });
   }
 
-  String get _rangeLabel {
-    switch (_range) {
-      case _SummaryRange.week:
-        return "Week";
-      case _SummaryRange.month:
-        return "Month";
-      case _SummaryRange.year:
-        return "Year";
-    }
-  }
-
   void _openDumpingStations() {
     Navigator.of(context).pushNamed('/company/dumping-stations');
   }
 
   void _openSummaryDashboard() {
-    Navigator.of(context).pushNamed('/company/summary-dashboard');
-  }
-
-  void _showMetricPopup({required String title, required int value}) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _MetricPopup(
-        headerGreen: headerGreen,
-        pillGreen: pillGreen,
-        title: title,
-        subtitle: "Range: $_rangeLabel",
-        value: value,
-      ),
-    );
+    if (widget.onTabChange != null) {
+      widget.onTabChange!(2);
+    } else {
+      Navigator.of(context).pushNamed('/company/summary-dashboard');
+    }
   }
 
   @override
@@ -368,14 +349,6 @@ class _AdminHomePageState extends State<AdminHomePage> {
                     totalReports: _allReports.length,
                     totalCollected: 0, // Need logic for collected
                     onChangeRange: (r) => setState(() => _range = r),
-                    onTapTotalReports: () => _showMetricPopup(
-                      title: "Total Reports",
-                      value: _allReports.length,
-                    ),
-                    onTapTotalCollected: () => _showMetricPopup(
-                      title: "Total Collected",
-                      value: 0,
-                    ),
                   ),
 
                   SizedBox(height: rs(8)),
@@ -599,9 +572,6 @@ class _SummaryCard extends StatelessWidget {
   final int totalCollected;
   final ValueChanged<_SummaryRange> onChangeRange;
 
-  final VoidCallback onTapTotalReports;
-  final VoidCallback onTapTotalCollected;
-
   const _SummaryCard({
     required this.s,
     required this.rs,
@@ -610,8 +580,6 @@ class _SummaryCard extends StatelessWidget {
     required this.totalReports,
     required this.totalCollected,
     required this.onChangeRange,
-    required this.onTapTotalReports,
-    required this.onTapTotalCollected,
   });
 
   @override
@@ -683,7 +651,7 @@ class _SummaryCard extends StatelessWidget {
                   title: "Total Reports",
                   value: "$totalReports",
                   icon: Icons.receipt_long_outlined,
-                  onTap: onTapTotalReports,
+                  showChevron: false,
                 ),
               ),
               SizedBox(width: s(10)),
@@ -693,7 +661,7 @@ class _SummaryCard extends StatelessWidget {
                   title: "Total Collected",
                   value: "$totalCollected",
                   icon: Icons.check_circle_outline,
-                  onTap: onTapTotalCollected,
+                  showChevron: false,
                 ),
               ),
             ],
@@ -709,28 +677,25 @@ class _MetricTile extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
-  final VoidCallback onTap;
+  final bool showChevron;
 
   const _MetricTile({
     required this.s,
     required this.title,
     required this.value,
     required this.icon,
-    required this.onTap,
+    this.showChevron = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(s(16)),
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.all(s(12)),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2E746A).withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(s(16)),
-        ),
-        child: Row(
+    return Container(
+      padding: EdgeInsets.all(s(12)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2E746A).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(s(16)),
+      ),
+      child: Row(
           children: [
             Container(
               width: s(40),
@@ -773,14 +738,14 @@ class _MetricTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: s(20),
-              color: Colors.black.withValues(alpha: 0.35),
-            ),
+            if (showChevron)
+              Icon(
+                Icons.chevron_right_rounded,
+                size: s(20),
+                color: Colors.black.withValues(alpha: 0.35),
+              ),
           ],
         ),
-      ),
     );
   }
 }
@@ -826,136 +791,6 @@ class _SegmentButton extends StatelessWidget {
             color: selected
                 ? Colors.white
                 : Colors.black.withValues(alpha: 0.70),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MetricPopup extends StatelessWidget {
-  final Color headerGreen;
-  final Color pillGreen;
-  final String title;
-  final String subtitle;
-  final int value;
-
-  const _MetricPopup({
-    required this.headerGreen,
-    required this.pillGreen,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final w = mq.size.width;
-    double s(double v) => v * (w / 423.0);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => Navigator.of(context).pop(),
-      child: SafeArea(
-        child: Container(
-          margin: EdgeInsets.only(top: s(170)),
-          padding: EdgeInsets.fromLTRB(s(18), s(16), s(18), s(18)),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE6F1ED),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(s(22)),
-              topRight: Radius.circular(s(22)),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: s(46),
-                height: s(5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              SizedBox(height: s(14)),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontFamily: 'Lexend',
-                        fontSize: s(18),
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: s(10)),
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(s(16)),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(s(18)),
-                  boxShadow: const [
-                    BoxShadow(
-                      blurRadius: 10,
-                      color: Color(0x14000000),
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: s(52),
-                      height: s(52),
-                      decoration: BoxDecoration(
-                        color: headerGreen.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(s(18)),
-                      ),
-                      child: Icon(
-                        Icons.analytics_outlined,
-                        color: headerGreen,
-                        size: s(24),
-                      ),
-                    ),
-                    SizedBox(width: s(12)),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              fontFamily: 'LexendExa',
-                              fontSize: s(11),
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black.withValues(alpha: 0.60),
-                            ),
-                          ),
-                          SizedBox(height: s(6)),
-                          Text(
-                            "$value",
-                            style: TextStyle(
-                              fontFamily: 'Lexend',
-                              fontSize: s(28),
-                              fontWeight: FontWeight.w900,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ),
       ),

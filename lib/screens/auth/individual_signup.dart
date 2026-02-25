@@ -273,7 +273,7 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
             ),
           ),
           DropdownButtonFormField<String>(
-            value: selectedValue,
+            initialValue: selectedValue,
             items: items
                 .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                 .toList(),
@@ -316,7 +316,7 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
           children: const [
             Icon(Icons.g_mobiledata, color: Colors.red, size: 28),
             SizedBox(width: 5),
-            const Text("Signin with Google",
+            Text("Signin with Google",
                 style: TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),

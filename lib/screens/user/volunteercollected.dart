@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/report_model.dart';
 import '../../services/report_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/user_service.dart';
 import '../../models/notification_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
@@ -17,34 +18,110 @@ class VolunteerCollectedPage extends StatefulWidget {
 class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
   final ReportService _reportService = ReportService();
   final NotificationService _notificationService = NotificationService();
-  bool _isApproving = false;
+  final UserService _userService = UserService();
+  bool _isProcessing = false;
+  bool _actionTaken = false;
 
-  Future<void> _approveRequest() async {
-    if (widget.volunteerId == null) return;
+  Future<void> _handleAction(bool isApprove) async {
+    if (widget.volunteerId == null || _actionTaken) return;
 
-    setState(() => _isApproving = true);
+    setState(() {
+      _isProcessing = true;
+    });
+
     try {
-      // 1. Update report status to approved
-      await _reportService.updateReportStatus(widget.report.reportId, 'approved');
+      // 1. Fetch user profiles to get phone numbers
+      final volunteerProfile = await _userService.fetchUserProfile(widget.volunteerId!);
+      final ownerProfile = await _userService.fetchUserProfile(widget.report.userId);
 
-      // 2. Send notification to volunteer
-      await _notificationService.sendNotification(
-        NotificationModel(
-          id: '',
-          recipientId: widget.volunteerId!,
-          title: "Request Approved",
-          subtitle: "Your request to collect ${widget.report.aiAnalysis?.category ?? 'waste'} was approved. Please go collect.",
-          type: 'request_approved',
-          relatedId: widget.report.reportId,
-          time: Timestamp.now(),
-        ),
-      );
+      final volunteerPhone = volunteerProfile?.phoneNumber ?? "N/A";
+      final ownerPhone = ownerProfile?.phoneNumber ?? "N/A";
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Request approved successfully!")),
+      if (isApprove) {
+        // Approve Logic
+        await _reportService.updateReportStatus(widget.report.reportId, 'approved');
+
+        // Notify Volunteer
+        await _notificationService.sendNotification(
+          NotificationModel(
+            id: '',
+            recipientId: widget.volunteerId!,
+            title: "Request Approved",
+            subtitle: "Your request to collect ${widget.report.aiAnalysis?.category ?? 'waste'} was approved. Contact owner: $ownerPhone",
+            type: 'request_approved',
+            relatedId: widget.report.reportId,
+            senderId: widget.report.userId,
+            time: Timestamp.now(),
+          ),
         );
-        Navigator.pop(context);
+
+        // Notify Owner (Confirmation)
+        await _notificationService.sendNotification(
+          NotificationModel(
+            id: '',
+            recipientId: widget.report.userId,
+            title: "Collection Approved",
+            subtitle: "You approved a collection request. Volunteer contact: $volunteerPhone",
+            type: 'collection_confirmation',
+            relatedId: widget.report.reportId,
+            senderId: widget.volunteerId,
+            time: Timestamp.now(),
+          ),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Request approved successfully!")),
+          );
+        }
+      } else {
+        // Reject Logic
+        // We might want to keep status as pending/matched but remove this specific volunteer's request
+        // For simplicity, let's just keep the status same but notify rejection
+        
+        // Notify Volunteer
+        await _notificationService.sendNotification(
+          NotificationModel(
+            id: '',
+            recipientId: widget.volunteerId!,
+            title: "Request Rejected",
+            subtitle: "Your request to collect ${widget.report.aiAnalysis?.category ?? 'waste'} was rejected by the owner.",
+            type: 'request_rejected',
+            relatedId: widget.report.reportId,
+            senderId: widget.report.userId,
+            time: Timestamp.now(),
+          ),
+        );
+
+        // Notify Owner (Confirmation)
+        await _notificationService.sendNotification(
+          NotificationModel(
+            id: '',
+            recipientId: widget.report.userId,
+            title: "Collection Rejected",
+            subtitle: "You rejected the collection request from the volunteer.",
+            type: 'collection_rejection',
+            relatedId: widget.report.reportId,
+            senderId: widget.volunteerId,
+            time: Timestamp.now(),
+          ),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Request rejected.")),
+          );
+        }
+      }
+
+      setState(() {
+        _actionTaken = true;
+      });
+      
+      if (mounted) {
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) Navigator.pop(context);
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -53,7 +130,7 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isApproving = false);
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
@@ -101,30 +178,51 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
             ),
             const SizedBox(height: 30),
             
-            if (widget.report.status == 'pending' || widget.report.status == 'matched' || widget.report.status == 'no_company_found')
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isApproving ? null : _approveRequest,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF387664),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            if ((widget.report.status == 'pending' || widget.report.status == 'matched' || widget.report.status == 'no_company_found') && !_actionTaken)
+              Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isProcessing ? null : () => _handleAction(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF387664),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: _isProcessing 
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text("Approve Request", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
                   ),
-                  child: _isApproving 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Approve Request", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: _isProcessing ? null : () => _handleAction(false),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text("Reject Request", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                ],
               )
-            else if (widget.report.status == 'approved')
-              const Center(
+            else if (widget.report.status == 'approved' || _actionTaken)
+              Center(
                 child: Column(
                   children: [
-                    Icon(Icons.check_circle, color: Color(0xFF387664), size: 50),
-                    SizedBox(height: 10),
+                    Icon(
+                      _actionTaken && widget.report.status != 'approved' ? Icons.cancel : Icons.check_circle, 
+                      color: _actionTaken && widget.report.status != 'approved' ? Colors.red : const Color(0xFF387664), 
+                      size: 50
+                    ),
+                    const SizedBox(height: 10),
                     Text(
-                      "Request Already Approved",
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF387664)),
+                      _actionTaken && widget.report.status != 'approved' ? "Request Rejected" : "Request Already Approved",
+                      style: TextStyle(fontWeight: FontWeight.bold, color: _actionTaken && widget.report.status != 'approved' ? Colors.red : const Color(0xFF387664)),
                     ),
                   ],
                 ),

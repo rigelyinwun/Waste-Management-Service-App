@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'dart:convert';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/user_service.dart';
 import '../../models/notification_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -19,6 +20,7 @@ class _WasteListPageState extends State<WasteListPage> {
   final ReportService _reportService = ReportService();
   final AuthService _authService = AuthService();
   final NotificationService _notificationService = NotificationService();
+  final UserService _userService = UserService();
   final TextEditingController _requestController = TextEditingController();
 
   PreferredSizeWidget _buildAppBar(String title) => AppBar(
@@ -244,16 +246,24 @@ class _WasteListPageState extends State<WasteListPage> {
             const SizedBox(height: 15),
             ElevatedButton(
               onPressed: () async {            
+                // Fetch sender (volunteer) phone number
+                final senderId = _authService.currentUser?.uid;
+                String senderPhone = "N/A";
+                if (senderId != null) {
+                  final profile = await _userService.fetchUserProfile(senderId);
+                  senderPhone = profile?.phoneNumber ?? "N/A";
+                }
+
                 // Send notification to the owner
                 await _notificationService.sendNotification(
                   NotificationModel(
                     id: '',
                     recipientId: report.userId,
                     title: "New Request",
-                    subtitle: "A request to collect ${report.aiAnalysis?.category ?? 'waste'} was sent.",
+                    subtitle: "A request to collect ${report.aiAnalysis?.category ?? 'waste'} was sent. Volunteer contact: $senderPhone",
                     type: 'collection_request',
                     relatedId: report.reportId,
-                    senderId: _authService.currentUser?.uid,
+                    senderId: senderId,
                     time: Timestamp.now(),
                   ),
                 );

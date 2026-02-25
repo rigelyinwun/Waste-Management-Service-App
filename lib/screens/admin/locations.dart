@@ -797,91 +797,128 @@ class _LocationScreenState extends State<LocationsPage> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) {
-        return _SheetContainer(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 2),
-              Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: divider.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            return _SheetContainer(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    "Legend",
-                    style: TextStyle(
-                      fontFamily: "Lexend",
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                      color: textDark,
+                  const SizedBox(height: 2),
+                  Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: divider.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(999),
                     ),
                   ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: textDark),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Text(
+                        "Legend (Tap to Filter)",
+                        style: TextStyle(
+                          fontFamily: "Lexend",
+                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                          color: textDark,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: textDark),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 10),
+                  _legendRow(
+                    color: _chipColorForType(_PlaceType.wasteLocation),
+                    icon: _iconForType(_PlaceType.wasteLocation),
+                    label: "Waste Location",
+                    isActive: _selectedTypes.contains(_PlaceType.wasteLocation),
+                    onTap: () => _toggleType(_PlaceType.wasteLocation, setSheet),
+                  ),
+                  const SizedBox(height: 8),
+                  _legendRow(
+                    color: _chipColorForType(_PlaceType.dumpingStation),
+                    icon: _iconForType(_PlaceType.dumpingStation),
+                    label: "Dumping Station",
+                    isActive: _selectedTypes.contains(_PlaceType.dumpingStation),
+                    onTap: () => _toggleType(_PlaceType.dumpingStation, setSheet),
+                  ),
+                  const SizedBox(height: 8),
+                  _legendRow(
+                    color: _chipColorForType(_PlaceType.recyclingCenter),
+                    icon: _iconForType(_PlaceType.recyclingCenter),
+                    label: "Recycling Center",
+                    isActive: _selectedTypes.contains(_PlaceType.recyclingCenter),
+                    onTap: () => _toggleType(_PlaceType.recyclingCenter, setSheet),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
-              const SizedBox(height: 10),
-              _legendRow(
-                color: _chipColorForType(_PlaceType.wasteLocation),
-                icon: _iconForType(_PlaceType.wasteLocation),
-                label: "Waste Location",
-              ),
-              const SizedBox(height: 8),
-              _legendRow(
-                color: _chipColorForType(_PlaceType.dumpingStation),
-                icon: _iconForType(_PlaceType.dumpingStation),
-                label: "Dumping Station",
-              ),
-              const SizedBox(height: 8),
-              _legendRow(
-                color: _chipColorForType(_PlaceType.recyclingCenter),
-                icon: _iconForType(_PlaceType.recyclingCenter),
-                label: "Recycling Center",
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            );
+          },
         );
       },
     );
+  }
+
+  void _toggleType(_PlaceType type, StateSetter setSheet) {
+    setState(() {
+      if (_selectedTypes.contains(type)) {
+        _selectedTypes.remove(type);
+      } else {
+        _selectedTypes.add(type);
+      }
+      _rebuildMarkers();
+    });
+    setSheet(() {});
   }
 
   Widget _legendRow({
     required Color color,
     required IconData icon,
     required String label,
+    required bool isActive,
+    required VoidCallback onTap,
   }) {
-    return Row(
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: Colors.white),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: isActive ? color : color.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: "Lexend",
+                  fontWeight: isActive ? FontWeight.w500 : FontWeight.w200,
+                  fontSize: 13.5,
+                  color: isActive ? textDark : textDark.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            if (isActive)
+              const Icon(Icons.check_circle, color: headerGreen, size: 20)
+            else
+              Icon(Icons.circle_outlined, color: divider, size: 20),
+          ],
         ),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: "Lexend",
-            fontWeight: FontWeight.w200,
-            fontSize: 13.5,
-            color: textDark,
-          ),
-        ),
-      ],
+      ),
     );
   }
 

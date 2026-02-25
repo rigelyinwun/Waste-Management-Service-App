@@ -6,7 +6,7 @@ class CompanyMatchingService {
   CompanyMatchingService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  Future<String?> findMatchingCompany(String category) async {
+  Future<String?> findMatchingCompany(String category, {String? excludeCompanyId}) async {
     // 1. Prepare keywords from category
     final categoryLower = category.toLowerCase();
     final words = categoryLower.split(RegExp(r'\s+')).where((w) => w.length > 2).toList();
@@ -35,15 +35,26 @@ class CompanyMatchingService {
     final cappedTerms = termsList.length > 10 ? termsList.sublist(0, 10) : termsList;
 
     try {
-      final snapshot = await _firestore
+      var query = _firestore
           .collection('users')
           .where('role', isEqualTo: 'company')
-          .where('wasteCategories', arrayContainsAny: cappedTerms)
-          .limit(1)
-          .get();
+          .where('wasteCategories', arrayContainsAny: cappedTerms);
+      
+      final snapshot = await query.get();
 
       if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.first.id;
+        // Filter out excluded company if needed
+        final match = snapshot.docs.firstWhere(
+          (doc) => doc.id != excludeCompanyId,
+          orElse: () => snapshot.docs.first, // Fallback if no other matches, or just return null?
+        );
+        
+        // If the only match is the excluded one, and we really want "others", return null
+        if (match.id == excludeCompanyId && snapshot.docs.length == 1) {
+          return null;
+        }
+
+        return match.id;
       }
     } catch (e) {
       print("Warning: keyword matching query failed or no matches: $e");

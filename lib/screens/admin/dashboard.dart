@@ -30,15 +30,25 @@ class _SummaryDashboardPageState extends State<SummaryDashboardPage> {
     _NearbyCardData(location: "Jalan Ipoh", category: "Old Books", count: 39),
   ];
 
+  static const Color colorPlastic = Color(0xFFD65B5B);
+  static const Color colorPaper = Color(0xFFFFC46B);
+  static const Color colorGlass = Color(0xFFA9D76B);
+  static const Color colorMetal = Color(0xFF1E73B8);
+  static const Color colorTextiles = Color(0xFF9B59B6);
+
   final List<_PieSlice> pie = const [
-    _PieSlice(label: "Plastic", value: 0.66, color: Color(0xFFD65B5B)),
-    _PieSlice(label: "Paper", value: 0.18, color: Color(0xFFFFC46B)),
-    _PieSlice(label: "Glass", value: 0.16, color: Color(0xFFA9D76B)),
+    _PieSlice(label: "Plastic", value: 0.40, color: colorPlastic),
+    _PieSlice(label: "Paper", value: 0.20, color: colorPaper),
+    _PieSlice(label: "Glass", value: 0.15, color: colorGlass),
+    _PieSlice(label: "Metal", value: 0.15, color: colorMetal),
+    _PieSlice(label: "Textiles", value: 0.10, color: colorTextiles),
   ];
 
-  final List<double> lineA = const [3, 6, 4, 5, 4, 6]; // red
-  final List<double> lineB = const [1, 3, 2, 1, 2, 2]; // blue
-  final List<double> lineC = const [2, 3, 2, 3, 2.5, 4.2]; // yellow
+  final List<double> linePlastic = const [3, 6, 4, 5, 4, 6];
+  final List<double> linePaper = const [2, 4, 3, 4, 3, 5];
+  final List<double> lineGlass = const [1, 2, 2, 3, 2, 3];
+  final List<double> lineMetal = const [1, 3, 2, 1, 2, 2];
+  final List<double> lineTextiles = const [2, 3, 2, 3, 2.5, 4.2];
 
   @override
   Widget build(BuildContext context) {
@@ -205,23 +215,37 @@ class _SummaryDashboardPageState extends State<SummaryDashboardPage> {
                           borderData: FlBorderData(show: false),
                           lineBarsData: [
                             LineChartBarData(
-                              spots: lineA.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+                              spots: linePlastic.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
                               isCurved: true,
-                              color: const Color(0xFFB4431D),
+                              color: colorPlastic,
                               barWidth: 4,
                               dotData: const FlDotData(show: false),
                             ),
                             LineChartBarData(
-                              spots: lineB.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+                              spots: linePaper.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
                               isCurved: true,
-                              color: const Color(0xFF1E73B8),
+                              color: colorPaper,
                               barWidth: 4,
                               dotData: const FlDotData(show: false),
                             ),
                             LineChartBarData(
-                              spots: lineC.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+                              spots: lineGlass.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
                               isCurved: true,
-                              color: const Color(0xFFF2C100),
+                              color: colorGlass,
+                              barWidth: 4,
+                              dotData: const FlDotData(show: false),
+                            ),
+                            LineChartBarData(
+                              spots: lineMetal.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+                              isCurved: true,
+                              color: colorMetal,
+                              barWidth: 4,
+                              dotData: const FlDotData(show: false),
+                            ),
+                            LineChartBarData(
+                              spots: lineTextiles.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+                              isCurved: true,
+                              color: colorTextiles,
                               barWidth: 4,
                               dotData: const FlDotData(show: false),
                             ),
@@ -233,11 +257,20 @@ class _SummaryDashboardPageState extends State<SummaryDashboardPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _LegendItem(color: const Color(0xFFB4431D), label: "Plastic", fs: fs),
+                        _LegendItem(color: colorPlastic, label: "Plastic", fs: fs),
                         SizedBox(width: s(10)),
-                        _LegendItem(color: const Color(0xFF1E73B8), label: "Metal", fs: fs),
+                        _LegendItem(color: colorPaper, label: "Paper", fs: fs),
                         SizedBox(width: s(10)),
-                        _LegendItem(color: const Color(0xFFF2C100), label: "Textiles", fs: fs),
+                        _LegendItem(color: colorGlass, label: "Glass", fs: fs),
+                      ],
+                    ),
+                    SizedBox(height: rs(4)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _LegendItem(color: colorMetal, label: "Metal", fs: fs),
+                        SizedBox(width: s(10)),
+                        _LegendItem(color: colorTextiles, label: "Textiles", fs: fs),
                       ],
                     ),
                     SizedBox(height: rs(14)),
@@ -278,11 +311,20 @@ class _SummaryDashboardPageState extends State<SummaryDashboardPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _LegendItem(color: const Color(0xFFD65B5B), label: "Plastic", fs: fs),
+                         _LegendItem(color: colorPlastic, label: "Plastic", fs: fs),
                         SizedBox(width: s(10)),
-                        _LegendItem(color: const Color(0xFFFFC46B), label: "Paper", fs: fs),
+                        _LegendItem(color: colorPaper, label: "Paper", fs: fs),
                         SizedBox(width: s(10)),
-                        _LegendItem(color: const Color(0xFFA9D76B), label: "Glass", fs: fs),
+                        _LegendItem(color: colorGlass, label: "Glass", fs: fs),
+                      ],
+                    ),
+                    SizedBox(height: rs(4)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _LegendItem(color: colorMetal, label: "Metal", fs: fs),
+                        SizedBox(width: s(10)),
+                        _LegendItem(color: colorTextiles, label: "Textiles", fs: fs),
                       ],
                     ),
                   ],
