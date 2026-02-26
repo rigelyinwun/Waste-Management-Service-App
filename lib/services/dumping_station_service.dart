@@ -79,4 +79,14 @@ class DumpingStationService {
             .map((doc) => DumpingStation.fromMap(doc.data()))
             .toList());
   }
+
+  /// Fetch all stations
+  Stream<List<DumpingStation>> getAllStations() {
+    return _firestore
+        .collection(_collection)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => DumpingStation.fromMap(doc.data()))
+            .toList());
+  }
 }
