@@ -6,7 +6,16 @@ import '../../services/user_service.dart';
 import '../../models/user_model.dart';
 
 class BusinessSignUpPage extends StatefulWidget {
-  const BusinessSignUpPage({super.key});
+  final bool isGoogle;
+  final String? googleEmail;
+  final String? googleName;
+
+  const BusinessSignUpPage({
+    super.key,
+    this.isGoogle = false,
+    this.googleEmail,
+    this.googleName,
+  });
 
   @override
   State<BusinessSignUpPage> createState() => _BusinessSignUpPageState();
@@ -16,6 +25,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
   final TextEditingController _companyNameController = TextEditingController();
   final TextEditingController _ssmController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -23,6 +33,15 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
   final AuthService _authService = AuthService();
   final UserService _userService = UserService();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isGoogle) {
+      _companyNameController.text = widget.googleName ?? "";
+      _emailController.text = widget.googleEmail ?? "";
+    }
+  }
 
   final List<String> _selectedCategories = [];
   String? _selectedArea;
@@ -48,13 +67,14 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
     final companyName = _companyNameController.text.trim();
     final ssm = _ssmController.text.trim();
     final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
     if (companyName.isEmpty ||
         ssm.isEmpty ||
         email.isEmpty ||
-        password.isEmpty ||
+        phone.isEmpty ||
         _selectedCategories.isEmpty ||
         _selectedArea == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,25 +83,40 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
       return;
     }
 
-    if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match")),
-      );
-      return;
+    if (!widget.isGoogle) {
+      if (password.isEmpty || confirmPassword.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please enter password")),
+        );
+        return;
+      }
+      if (password != confirmPassword) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Passwords do not match")),
+        );
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final userCredential = await _authService.registerWithEmail(
-          email: email, password: password);
+      String uid;
+      if (widget.isGoogle) {
+        uid = _authService.currentUser!.uid;
+      } else {
+        final userCredential = await _authService.registerWithEmail(
+            email: email, password: password);
+        uid = userCredential.user!.uid;
+      }
 
       final newUser = AppUser(
-        uid: userCredential.user!.uid,
+        uid: uid,
         role: 'company',
         email: email,
         companyName: companyName,
         companySSM: ssm,
+        phoneNumber: phone,
         wasteCategories: _selectedCategories,
         serviceAreas: [_selectedArea!],
       );
@@ -142,7 +177,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
                           ),
                         ),
                         const SizedBox(height: 15),
-                        _buildGoogleBtn(context),
+                        if (!widget.isGoogle) _buildGoogleBtn(context),
                       ],
                     ),
                   ),
@@ -163,17 +198,20 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  _buildField("COMPANY NAME", _companyNameController),
+                   _buildField("COMPANY NAME", _companyNameController),
                   _buildField("COMPANY REGISTRATION (SSM)", _ssmController),
-                  _buildField("BUSINESS EMAIL ADDRESS", _emailController),
+                  _buildField("BUSINESS EMAIL ADDRESS", _emailController, isEnabled: !widget.isGoogle),
+                  _buildField("BUSINESS PHONE NUMBER", _phoneController),
                   _buildMultiSelectCategory(),
                   const SizedBox(height: 10),
                   _buildDropdown("SERVICE AREA", _areas, _selectedArea, (val) {
                     setState(() => _selectedArea = val);
                   }),
-                  _buildField("PASSWORD", _passwordController, isObscure: true),
-                  _buildField("CONFIRM PASSWORD", _confirmPasswordController,
-                      isObscure: true),
+                  if (!widget.isGoogle) ...[
+                    _buildField("PASSWORD", _passwordController, isObscure: true),
+                    _buildField("CONFIRM PASSWORD", _confirmPasswordController,
+                        isObscure: true),
+                  ],
                   const SizedBox(height: 30),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -233,7 +271,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
   }
 
   Widget _buildField(String label, TextEditingController controller,
-      {bool isObscure = false}) {
+      {bool isObscure = false, bool isEnabled = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Column(
@@ -253,9 +291,10 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
           TextField(
             controller: controller,
             obscureText: isObscure,
+            enabled: isEnabled,
             decoration: InputDecoration(
               filled: true,
-              fillColor: const Color(0xFF8BC9A8),
+              fillColor: isEnabled ? const Color(0xFF8BC9A8) : Colors.grey[300],
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
               border: OutlineInputBorder(

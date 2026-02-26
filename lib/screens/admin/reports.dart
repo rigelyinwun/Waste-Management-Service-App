@@ -24,6 +24,7 @@ class _ReportsPageState extends State<ReportsPage> {
   String _searchQuery = "";
   AppUser? _currentUser;
   bool _isLoadingUser = true;
+  bool _isAllReportsExpanded = false;
 
   // Filter state
   String? _selectedCategory;
@@ -116,11 +117,7 @@ class _ReportsPageState extends State<ReportsPage> {
                 child: _isLoadingUser 
                   ? const Center(child: CircularProgressIndicator())
                   : StreamBuilder<List<Report>>(
-                  stream: (_currentUser?.role.toLowerCase() == 'business' || 
-                           _currentUser?.role.toLowerCase() == 'company' || 
-                           _currentUser?.role.toLowerCase() == 'admin')
-                      ? _reportService.getReportsByCompany(_currentUser!.uid)
-                      : _reportService.getAllReports(),
+                  stream: _reportService.getAllReports(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -129,7 +126,10 @@ class _ReportsPageState extends State<ReportsPage> {
                       return const Center(child: Text("No reports found."));
                     }
 
-                    final filtered = snapshot.data!.where((r) {
+                    final allReports = snapshot.data!;
+
+                    // Filter logic
+                    final filteredAll = allReports.where((r) {
                       // Search Query Filter
                       bool matchesSearch = true;
                       if (_searchQuery.isNotEmpty) {
@@ -162,40 +162,100 @@ class _ReportsPageState extends State<ReportsPage> {
                       return true;
                     }).toList();
 
-                    if (filtered.isEmpty) {
-                      return const Center(child: Text("No matching reports."));
-                    }
+                    final matchedReports = filteredAll.where((r) => r.matchedCompanyId == _currentUser?.uid && r.status != 'rejected').toList();
+                    final otherReports = filteredAll.where((r) => r.matchedCompanyId != _currentUser?.uid).toList();
 
-                    return ListView.builder(
+                    return ListView(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final r = filtered[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => WasteProfilePage(report: r),
+                      children: [
+                        _buildSectionHeader("Matched Reports", headerGreen),
+                        if (matchedReports.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Center(child: Text("No matched reports.")),
+                          )
+                        else
+                          ...matchedReports.map((r) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => WasteProfilePage(report: r),
+                                ),
+                              ),
+                              child: ReportCard(
+                                report: r,
+                                cardGreen: cardGreen,
+                                pillGreen: pillGreen,
+                                headerGreen: headerGreen,
+                                onReject: () => _handleReject(r),
                               ),
                             ),
-                            child: ReportCard(
-                              report: r,
-                              cardGreen: cardGreen,
-                              pillGreen: pillGreen,
-                              headerGreen: headerGreen,
-                              onReject: () => _handleReject(r),
-                            ),
+                          )),
+                        
+                        const SizedBox(height: 20),
+                        GestureDetector(
+                          onTap: () => setState(() => _isAllReportsExpanded = !_isAllReportsExpanded),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildSectionHeader("All Reports", headerGreen),
+                              Icon(
+                                _isAllReportsExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                color: headerGreen,
+                              ),
+                            ],
                           ),
-                        );
-                      },
+                        ),
+                        if (_isAllReportsExpanded)
+                          if (otherReports.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(child: Text("No other reports found.")),
+                            )
+                          else
+                            ...otherReports.map((r) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => WasteProfilePage(report: r),
+                                  ),
+                                ),
+                                child: ReportCard(
+                                  report: r,
+                                  cardGreen: cardGreen.withValues(alpha: 0.6),
+                                  pillGreen: pillGreen,
+                                  headerGreen: headerGreen,
+                                  onReject: () => _handleReject(r),
+                                ),
+                              ),
+                            )),
+                        const SizedBox(height: 40),
+                      ],
                     );
                   },
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: color,
+          fontFamily: "Lexend",
         ),
       ),
     );

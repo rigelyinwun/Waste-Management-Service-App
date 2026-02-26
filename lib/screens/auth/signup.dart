@@ -1,15 +1,73 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
 import 'individual_signup.dart';
 import 'business_signup.dart';
+import 'login.dart'; // For GlobalCSS
 
-class SignUpPage extends StatelessWidget {
+class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
+
+  @override
+  State<SignUpPage> createState() => _SignUpPageState();
+}
+
+class _SignUpPageState extends State<SignUpPage> {
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
+  bool _isLoading = false;
+
+  Future<void> _handleGoogleSignUp() async {
+    setState(() => _isLoading = true);
+    try {
+      final userCredential = await _authService.signInWithGoogle();
+      if (userCredential == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      if (mounted) {
+        // We don't check for profile here, because they might be choosing role now
+        // But if they already HAVE a profile, we should just log them in
+        final userProfile = await _userService.fetchUserProfile(userCredential.user!.uid);
+        if (userProfile != null) {
+          final role = userProfile.role.toLowerCase();
+          if (role == 'admin' || role == 'company' || role == 'business') {
+            Navigator.pushReplacementNamed(context, '/admin_base');
+          } else {
+            Navigator.pushReplacementNamed(context, '/base');
+          }
+          return;
+        }
+
+        // Stay on this page but now they choose role to complete signup
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Google account linked. Now select your account type.")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Google signup failed: ${e.toString()}")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     final bool isMobile = size.width < 600;
+
+    // Check if user is already signed in with Google but needs to choose role
+    final googleUser = _authService.currentUser;
+    final bool isGoogleSignedIn = googleUser != null && googleUser.providerData.any((p) => p.providerId == 'google.com');
 
     return Scaffold(
       backgroundColor: const Color(0xFFB7D7C0),
@@ -48,7 +106,33 @@ class SignUpPage extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(height: size.height * 0.05),
+                  const SizedBox(height: 15),
+                  if (!isGoogleSignedIn) 
+                    _GoogleSignUpButton(
+                      isLoading: _isLoading,
+                      onPressed: _handleGoogleSignUp,
+                    ),
+                  if (isGoogleSignedIn)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Signed in as ${googleUser.email}",
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2D6A4F)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  SizedBox(height: size.height * 0.02),
                 ],
               ),
             ),
@@ -72,7 +156,16 @@ class SignUpPage extends StatelessWidget {
                                 title: 'Individual',
                                 subtitle: 'Households clearing clutter',
                                 icon: Icons.home_outlined,
-                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const IndividualSignUpPage())),
+                                onTap: () => Navigator.push(
+                                  context, 
+                                  MaterialPageRoute(
+                                    builder: (context) => IndividualSignUpPage(
+                                      isGoogle: isGoogleSignedIn,
+                                      googleEmail: googleUser?.email,
+                                      googleName: googleUser?.displayName,
+                                    )
+                                  )
+                                ),
                               ),
                             ),
                             const SizedBox(width: 15),
@@ -81,7 +174,16 @@ class SignUpPage extends StatelessWidget {
                                 title: 'Business',
                                 subtitle: 'Licensed collectors & recyclers',
                                 icon: Icons.business_outlined,
-                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const BusinessSignUpPage())),
+                                onTap: () => Navigator.push(
+                                  context, 
+                                  MaterialPageRoute(
+                                    builder: (context) => BusinessSignUpPage(
+                                      isGoogle: isGoogleSignedIn,
+                                      googleEmail: googleUser?.email,
+                                      googleName: googleUser?.displayName,
+                                    )
+                                  )
+                                ),
                               ),
                             ),
                           ],
@@ -96,6 +198,40 @@ class SignUpPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GoogleSignUpButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  const _GoogleSignUpButton({required this.isLoading, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(240, 50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        side: const BorderSide(color: Color(0xFF2D6A4F)),
+        backgroundColor: Colors.white.withValues(alpha: 0.8),
+      ),
+      onPressed: isLoading ? null : onPressed,
+      child: isLoading
+          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.network(
+                  'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                  height: 20,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, color: Colors.red),
+                ),
+                const SizedBox(width: 10),
+                const Text("Continue with Google", style: TextStyle(color: Color(0xFF2D6A4F), fontWeight: FontWeight.bold)),
+              ],
+            ),
     );
   }
 }

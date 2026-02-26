@@ -187,6 +187,51 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      final userCredential = await _authService.signInWithGoogle();
+      if (userCredential == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      if (mounted) {
+        final userProfile = await _userService.fetchUserProfile(userCredential.user!.uid);
+        
+        if (userProfile != null) {
+          final role = userProfile.role.toLowerCase();
+          if (role == 'admin' || role == 'company' || role == 'business') {
+            Navigator.pushReplacementNamed(context, '/admin_base');
+          } else {
+            Navigator.pushReplacementNamed(context, '/base');
+          }
+        } else {
+          // New user from Google, need to sign up
+          Navigator.pushNamed(
+            context, 
+            '/signup', 
+            arguments: {
+              'isGoogle': true,
+              'email': userCredential.user!.email,
+              'name': userCredential.user!.displayName,
+            },
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Google login failed: ${e.toString()}")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color highlightColor = Color(0xFF387664);
@@ -253,6 +298,36 @@ class _LoginPageState extends State<LoginPage> {
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold),
                           ),
+                  ),
+                  const SizedBox(height: 15),
+                  // Google Sign In Button
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(240, 58),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      side: const BorderSide(color: GlobalCSS.primaryGreen),
+                    ),
+                    onPressed: _isLoading ? null : _handleGoogleLogin,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.network(
+                          'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                          height: 24,
+                          errorBuilder: (context, error, stackTrace) => 
+                              const Icon(Icons.g_mobiledata, color: Colors.red, size: 28),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          "Continue with Google",
+                          style: TextStyle(
+                              color: GlobalCSS.primaryGreen,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 25),
                   GestureDetector(

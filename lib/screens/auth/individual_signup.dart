@@ -5,7 +5,16 @@ import '../../services/user_service.dart';
 import '../../models/user_model.dart';
 
 class IndividualSignUpPage extends StatefulWidget {
-  const IndividualSignUpPage({super.key});
+  final bool isGoogle;
+  final String? googleEmail;
+  final String? googleName;
+
+  const IndividualSignUpPage({
+    super.key,
+    this.isGoogle = false,
+    this.googleEmail,
+    this.googleName,
+  });
 
   @override
   State<IndividualSignUpPage> createState() => _IndividualSignUpPageState();
@@ -22,6 +31,15 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
   final AuthService _authService = AuthService();
   final UserService _userService = UserService();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isGoogle) {
+      _nameController.text = widget.googleName ?? "";
+      _emailController.text = widget.googleEmail ?? "";
+    }
+  }
 
   String? _selectedLocation;
   final List<String> _locations = [
@@ -44,32 +62,46 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
     if (name.isEmpty ||
         email.isEmpty ||
         phone.isEmpty ||
-        password.isEmpty ||
-        _selectedLocation == null) {
+        (_selectedLocation == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill in all fields")),
       );
       return;
     }
 
-    if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match")),
-      );
-      return;
+    if (!widget.isGoogle) {
+      if (password.isEmpty || confirmPassword.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please enter password")),
+        );
+        return;
+      }
+      if (password != confirmPassword) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Passwords do not match")),
+        );
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final userCredential = await _authService.registerWithEmail(
-          email: email, password: password);
+      String uid;
+      if (widget.isGoogle) {
+        uid = _authService.currentUser!.uid;
+      } else {
+        final userCredential = await _authService.registerWithEmail(
+            email: email, password: password);
+        uid = userCredential.user!.uid;
+      }
 
       final newUser = AppUser(
-        uid: userCredential.user!.uid,
+        uid: uid,
         role: 'user',
         email: email,
         username: name,
+        phoneNumber: phone,
       );
 
       await _userService.createUserProfile(newUser);
@@ -124,7 +156,7 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        _buildGoogleBtn(context),
+                        if (!widget.isGoogle) _buildGoogleBtn(context),
                       ],
                     ),
                   ),
@@ -146,15 +178,17 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
                   ),
                   const SizedBox(height: 30),
                   _buildField("FULL NAME", _nameController),
-                  _buildField("EMAIL ADDRESS", _emailController),
+                  _buildField("EMAIL ADDRESS", _emailController, isEnabled: !widget.isGoogle),
                   _buildField("PHONE NUMBER", _phoneController),
                   _buildDropdown(
                       "LOCATION/CITY", _locations, _selectedLocation, (val) {
                     setState(() => _selectedLocation = val);
                   }),
-                  _buildField("PASSWORD", _passwordController, isObscure: true),
-                  _buildField("CONFIRM PASSWORD", _confirmPasswordController,
-                      isObscure: true),
+                  if (!widget.isGoogle) ...[
+                    _buildField("PASSWORD", _passwordController, isObscure: true),
+                    _buildField("CONFIRM PASSWORD", _confirmPasswordController,
+                        isObscure: true),
+                  ],
                   const SizedBox(height: 30),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -218,7 +252,7 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
   }
 
   Widget _buildField(String label, TextEditingController controller,
-      {bool isObscure = false}) {
+      {bool isObscure = false, bool isEnabled = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Column(
@@ -238,9 +272,10 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
           TextField(
             controller: controller,
             obscureText: isObscure,
+            enabled: isEnabled,
             decoration: InputDecoration(
               filled: true,
-              fillColor: const Color(0xFF8BC9A8),
+              fillColor: isEnabled ? const Color(0xFF8BC9A8) : Colors.grey[300],
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
               border: OutlineInputBorder(
