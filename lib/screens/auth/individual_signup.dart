@@ -31,11 +31,13 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
   final AuthService _authService = AuthService();
   final UserService _userService = UserService();
   bool _isLoading = false;
+  bool _isGoogleAccount = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.isGoogle) {
+      _isGoogleAccount = true;
       _nameController.text = widget.googleName ?? "";
       _emailController.text = widget.googleEmail ?? "";
     }
@@ -69,7 +71,7 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
       return;
     }
 
-    if (!widget.isGoogle) {
+    if (!widget.isGoogle && !_isGoogleAccount) {
       if (password.isEmpty || confirmPassword.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Please enter password")),
@@ -88,8 +90,12 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
 
     try {
       String uid;
-      if (widget.isGoogle) {
-        uid = _authService.currentUser!.uid;
+      if (widget.isGoogle || _isGoogleAccount) {
+        final currentUser = _authService.currentUser;
+        if (currentUser == null) {
+          throw Exception("Google account not authenticated properly");
+        }
+        uid = currentUser.uid;
       } else {
         final userCredential = await _authService.registerWithEmail(
             email: email, password: password);
@@ -178,13 +184,13 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
                   ),
                   const SizedBox(height: 30),
                   _buildField("FULL NAME", _nameController),
-                  _buildField("EMAIL ADDRESS", _emailController, isEnabled: !widget.isGoogle),
+                  _buildField("EMAIL ADDRESS", _emailController, isEnabled: !widget.isGoogle && !_isGoogleAccount),
                   _buildField("PHONE NUMBER", _phoneController),
                   _buildDropdown(
                       "LOCATION/CITY", _locations, _selectedLocation, (val) {
                     setState(() => _selectedLocation = val);
                   }),
-                  if (!widget.isGoogle) ...[
+                  if (!widget.isGoogle && !_isGoogleAccount) ...[
                     _buildField("PASSWORD", _passwordController, isObscure: true),
                     _buildField("CONFIRM PASSWORD", _confirmPasswordController,
                         isObscure: true),
@@ -331,14 +337,34 @@ class _IndividualSignUpPageState extends State<IndividualSignUpPage> {
     );
   }
 
+  Future<void> _handleGoogleSignUp() async {
+    setState(() => _isLoading = true);
+    try {
+      final userCredential = await _authService.signInWithGoogle();
+      if (userCredential != null && mounted) {
+        final user = userCredential.user;
+        setState(() {
+          _isGoogleAccount = true;
+          _nameController.text = user?.displayName ?? "";
+          _emailController.text = user?.email ?? "";
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Google sign-in failed: ${e.toString()}")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Widget _buildGoogleBtn(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
-      },
+      onTap: _handleGoogleSignUp,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(

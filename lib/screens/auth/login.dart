@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/user_service.dart';
-
+import 'signup.dart';
 
 class GlobalCSS {
   static const Color primaryGreen = Color(0xFF2E6153);
@@ -208,14 +208,11 @@ class _LoginPageState extends State<LoginPage> {
           }
         } else {
           // New user from Google, need to sign up
-          Navigator.pushNamed(
-            context, 
-            '/signup', 
-            arguments: {
-              'isGoogle': true,
-              'email': userCredential.user!.email,
-              'name': userCredential.user!.displayName,
-            },
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SignUpPage(),
+            ),
           );
         }
       }

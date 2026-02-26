@@ -33,11 +33,13 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
   final AuthService _authService = AuthService();
   final UserService _userService = UserService();
   bool _isLoading = false;
+  bool _isGoogleAccount = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.isGoogle) {
+      _isGoogleAccount = true;
       _companyNameController.text = widget.googleName ?? "";
       _emailController.text = widget.googleEmail ?? "";
     }
@@ -83,7 +85,7 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
       return;
     }
 
-    if (!widget.isGoogle) {
+    if (!widget.isGoogle && !_isGoogleAccount) {
       if (password.isEmpty || confirmPassword.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Please enter password")),
@@ -102,8 +104,12 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
 
     try {
       String uid;
-      if (widget.isGoogle) {
-        uid = _authService.currentUser!.uid;
+      if (widget.isGoogle || _isGoogleAccount) {
+        final currentUser = _authService.currentUser;
+        if (currentUser == null) {
+          throw Exception("Google account not authenticated properly");
+        }
+        uid = currentUser.uid;
       } else {
         final userCredential = await _authService.registerWithEmail(
             email: email, password: password);
@@ -200,14 +206,14 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
                   const SizedBox(height: 30),
                    _buildField("COMPANY NAME", _companyNameController),
                   _buildField("COMPANY REGISTRATION (SSM)", _ssmController),
-                  _buildField("BUSINESS EMAIL ADDRESS", _emailController, isEnabled: !widget.isGoogle),
+                  _buildField("BUSINESS EMAIL ADDRESS", _emailController, isEnabled: !widget.isGoogle && !_isGoogleAccount),
                   _buildField("BUSINESS PHONE NUMBER", _phoneController),
                   _buildMultiSelectCategory(),
                   const SizedBox(height: 10),
                   _buildDropdown("SERVICE AREA", _areas, _selectedArea, (val) {
                     setState(() => _selectedArea = val);
                   }),
-                  if (!widget.isGoogle) ...[
+                  if (!widget.isGoogle && !_isGoogleAccount) ...[
                     _buildField("PASSWORD", _passwordController, isObscure: true),
                     _buildField("CONFIRM PASSWORD", _confirmPasswordController,
                         isObscure: true),
@@ -410,9 +416,34 @@ class _BusinessSignUpPageState extends State<BusinessSignUpPage> {
     );
   }
 
+  Future<void> _handleGoogleSignUp() async {
+    setState(() => _isLoading = true);
+    try {
+      final userCredential = await _authService.signInWithGoogle();
+      if (userCredential != null && mounted) {
+        final user = userCredential.user;
+        setState(() {
+          _isGoogleAccount = true;
+          _companyNameController.text = user?.displayName ?? "";
+          _emailController.text = user?.email ?? "";
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Google sign-in failed: ${e.toString()}")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Widget _buildGoogleBtn(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: _handleGoogleSignUp,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(

@@ -162,8 +162,8 @@ class _ReportsPageState extends State<ReportsPage> {
                       return true;
                     }).toList();
 
-                    final matchedReports = filteredAll.where((r) => r.matchedCompanyId == _currentUser?.uid && r.status != 'rejected').toList();
-                    final otherReports = filteredAll.where((r) => r.matchedCompanyId != _currentUser?.uid).toList();
+                    final matchedReports = filteredAll.where((r) => r.matchedCompanyId == _currentUser?.uid && r.status != 'rejected' && r.status != 'completed').toList();
+                    final otherReports = filteredAll.where((r) => r.matchedCompanyId != _currentUser?.uid && r.status != 'completed').toList();
 
                     return ListView(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
