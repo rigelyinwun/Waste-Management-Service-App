@@ -46,7 +46,7 @@ class _MainBasePageState extends State<MainBasePage> {
             },
             items: [
               const BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Home"),
-              const BottomNavigationBarItem(icon: Icon(Icons.list), label: "Report"),
+              const BottomNavigationBarItem(icon: Icon(Icons.list_alt_outlined), label: "Report"),
               BottomNavigationBarItem(
                 icon: Badge(
                   label: Text('$unreadCount'),

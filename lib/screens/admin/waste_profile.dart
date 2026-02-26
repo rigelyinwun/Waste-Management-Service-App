@@ -3,6 +3,8 @@ import '../../models/report_model.dart';
 import '../../services/report_service.dart';
 import '../../services/company_matching_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
 import '../../models/notification_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
@@ -27,6 +29,8 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
   final ReportService _reportService = ReportService();
   final CompanyMatchingService _matchingService = CompanyMatchingService();
   final NotificationService _notificationService = NotificationService();
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
   bool _isSaving = false;
   bool _isRejecting = false;
 
@@ -153,12 +157,20 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: const TextStyle(fontSize: 13, fontFamily: "Lexend")),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: "Lexend"),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                fontFamily: "Lexend",
+              ),
+            ),
           ),
         ],
       ),
@@ -282,8 +294,24 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
   }
 
   Widget _bottomButtons(Color themeColor) {
-    final canRequest = _status == _CollectStatus.none;
+    final status = widget.report.status;
     
+    // Status-based flags
+    final isNone = status == 'matched' || status == 'no_company_found';
+    final isCollecting = status == 'collecting';
+    final isApproved = status == 'approved';
+    final isCompleted = status == 'completed';
+
+    // Button states
+    final canRequest = isNone && !_isRejecting;
+    final canMarkCollected = isApproved;
+    final canReject = isNone && !_isRejecting;
+
+    // Loading/Pending labels
+    String requestLabel = "Request Collect";
+    if (isCollecting) requestLabel = "Requested";
+    if (isApproved || isCompleted) requestLabel = "Request Approved";
+
     return Column(
       children: [
         SizedBox(
@@ -296,7 +324,7 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: Text(
-              _status == _CollectStatus.pending ? "Requested" : "Request Collect",
+              requestLabel,
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: "Lexend"),
             ),
           ),
@@ -306,14 +334,14 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
           width: double.infinity,
           height: 50,
           child: OutlinedButton(
-            onPressed: _onMarkCollectedPressed,
+            onPressed: canMarkCollected ? _onMarkCollectedPressed : null,
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: themeColor),
+              side: BorderSide(color: canMarkCollected ? themeColor : Colors.grey),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: Text(
-              _status == _CollectStatus.collected ? "Collected" : "Mark as Collected",
-              style: TextStyle(color: themeColor, fontWeight: FontWeight.bold, fontFamily: "Lexend"),
+              isCompleted ? "Collected" : "Mark as Collected",
+              style: TextStyle(color: canMarkCollected ? themeColor : Colors.grey, fontWeight: FontWeight.bold, fontFamily: "Lexend"),
             ),
           ),
         ),
@@ -322,16 +350,16 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
           width: double.infinity,
           height: 50,
           child: OutlinedButton(
-            onPressed: _isRejecting ? null : _onRejectPressed,
+            onPressed: canReject ? _onRejectPressed : null,
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.red),
+              side: BorderSide(color: canReject ? Colors.red : Colors.grey),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: _isRejecting 
               ? const CircularProgressIndicator(color: Colors.red)
-              : const Text(
+              : Text(
                   "Reject & Rematch",
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontFamily: "Lexend"),
+                  style: TextStyle(color: canReject ? Colors.red : Colors.grey, fontWeight: FontWeight.bold, fontFamily: "Lexend"),
                 ),
           ),
         ),
@@ -421,19 +449,94 @@ class _WasteProfileAdminPageState extends State<WasteProfilePage> {
     );
 
     if (res == true) {
-      setState(() => _status = _CollectStatus.pending);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Request sent.")),
+      try {
+        // Fetch sender (company/admin) phone number
+        final senderId = _authService.currentUser?.uid;
+        String senderPhone = "N/A";
+        if (senderId != null) {
+          final profile = await _userService.fetchUserProfile(senderId);
+          senderPhone = profile?.phoneNumber ?? "N/A";
+        }
+
+        // 1. Update status to 'collecting'
+        await _reportService.updateReportStatus(widget.report.reportId, 'collecting');
+        
+        // 2. Send notification to user
+        await _notificationService.sendNotification(
+          NotificationModel(
+            id: '',
+            recipientId: widget.report.userId,
+            title: "Collection Request",
+            subtitle: "A company has requested to collect your waste (${widget.report.aiAnalysis?.category ?? 'waste'}). Company contact: $senderPhone",
+            type: 'collection_request',
+            relatedId: widget.report.reportId,
+            senderId: senderId, // Using actual current user ID
+            time: Timestamp.now(),
+          ),
         );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Collection request sent successfully!")),
+          );
+          // Return to previous screen or refresh? Let's just pop to avoid state sync issues in this view
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error sending request: $e")),
+          );
+        }
       }
     }
   }
 
-  void _onMarkCollectedPressed() {
-    setState(() => _status = _CollectStatus.collected);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Marked as collected.")),
-    );
+  Future<void> _onMarkCollectedPressed() async {
+    try {
+      // 1. Mark as collected in DB
+      await _reportService.markAsCollected(widget.report.reportId);
+      
+      // 2. Send notification to user (reporter)
+      await _notificationService.sendNotification(
+        NotificationModel(
+          id: '',
+          recipientId: widget.report.userId,
+          title: "Waste Collected",
+          subtitle: "The waste from your report '${widget.report.aiAnalysis?.category ?? 'waste'}' has been picked up.",
+          type: 'collection_completed',
+          relatedId: widget.report.reportId,
+          time: Timestamp.now(),
+        ),
+      );
+
+      // 3. Send notification to company (matched company)
+      if (widget.report.matchedCompanyId != null) {
+        await _notificationService.sendNotification(
+          NotificationModel(
+            id: '',
+            recipientId: widget.report.matchedCompanyId!,
+            title: "Collection Finalized",
+            subtitle: "You have successfully collected waste for report #${widget.report.reportId.substring(0, 5)}...",
+            type: 'collection_finalized',
+            relatedId: widget.report.reportId,
+            time: Timestamp.now(),
+          ),
+        );
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Waste marked as collected and notifications sent!")),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error marking as collected: $e")),
+        );
+      }
+    }
   }
 }

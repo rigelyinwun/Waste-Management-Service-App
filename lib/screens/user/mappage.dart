@@ -24,6 +24,11 @@ class _MapPageState extends State<MapPage> {
   LatLng _currentLocation = const LatLng(3.1390, 101.6869); // Default KL
   bool _isLoading = true;
 
+  // Filters
+  bool _showWaste = true;
+  bool _showStations = true;
+  double _distanceKm = 10.0; // Default 10km
+
   @override
   void initState() {
     super.initState();
@@ -99,61 +104,142 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _loadMarkers() async {
+    setState(() => _isLoading = true);
     final role = _currentUserProfile?.role.toLowerCase();
     final isAdmin = role == 'business' || role == 'company' || role == 'admin';
     
+    final markers = <Marker>{};
+
     // Load Waste Reports (RED Markers)
-    Query wasteQuery = FirebaseFirestore.instance.collection('reports');
-    if (!isAdmin) {
-      wasteQuery = wasteQuery.where('isPublic', isEqualTo: true);
+    if (_showWaste) {
+      Query wasteQuery = FirebaseFirestore.instance.collection('reports');
+      if (!isAdmin) {
+        wasteQuery = wasteQuery.where('isPublic', isEqualTo: true);
+      }
+
+      final wasteSnapshot = await wasteQuery.get();
+      for (var doc in wasteSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final GeoPoint? location = data['location'];
+        if (location == null) continue;
+        
+        final pos = LatLng(location.latitude, location.longitude);
+        final dist = _calculateDistance(_currentLocation.latitude, _currentLocation.longitude, pos.latitude, pos.longitude);
+        
+        if (dist <= _distanceKm) {
+          markers.add(Marker(
+            markerId: MarkerId("waste_${doc.id}"),
+            position: pos,
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            infoWindow: InfoWindow(
+              title: "Waste: ${data['description'] ?? 'No Description'}",
+              snippet: "Category: ${data['aiAnalysis']?['category'] ?? 'analyzing'}",
+            ),
+          ));
+        }
+      }
     }
 
-    final wasteSnapshot = await wasteQuery.get();
-    final wasteMarkers = wasteSnapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      final GeoPoint? location = data['location'];
-      if (location == null) return null;
-      
-      return Marker(
-        markerId: MarkerId("waste_${doc.id}"),
-        position: LatLng(location.latitude, location.longitude),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: InfoWindow(
-          title: "Waste: ${data['description'] ?? 'No Description'}",
-          snippet: "Category: ${data['aiAnalysis']?['category'] ?? 'analyzing'}",
-        ),
-      );
-    }).whereType<Marker>().toSet();
-
     // Load Dumping Stations (GREEN Markers)
-    final stationsSnapshot = await FirebaseFirestore.instance.collection('dumping_stations').get();
-    final stationMarkers = stationsSnapshot.docs.map((doc) {
-      final data = doc.data();
-      final GeoPoint? location = data['location'];
-      if (location == null) return null;
+    if (_showStations) {
+      final stationsSnapshot = await FirebaseFirestore.instance.collection('dumping_stations').get();
+      for (var doc in stationsSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final GeoPoint? location = data['location'];
+        if (location == null) continue;
 
-      return Marker(
-        markerId: MarkerId("station_${doc.id}"),
-        position: LatLng(location.latitude, location.longitude),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: InfoWindow(
-          title: "Dumping Station",
-          snippet: "Company ID: ${data['companyId']}",
-        ),
-      );
-    }).whereType<Marker>().toSet();
+        final pos = LatLng(location.latitude, location.longitude);
+        final dist = _calculateDistance(_currentLocation.latitude, _currentLocation.longitude, pos.latitude, pos.longitude);
+
+        if (dist <= _distanceKm) {
+          markers.add(Marker(
+            markerId: MarkerId("station_${doc.id}"),
+            position: pos,
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+            infoWindow: InfoWindow(
+              title: "Dumping Station",
+              snippet: "Company ID: ${data['companyId']}",
+            ),
+          ));
+        }
+      }
+    }
 
     setState(() {
       _markers.clear();
-      _markers.addAll(wasteMarkers);
-      _markers.addAll(stationMarkers);
+      _markers.addAll(markers);
+      _isLoading = false;
     });
+  }
+
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    // Basic Haversine formula
+    return Geolocator.distanceBetween(lat1, lon1, lat2, lon2) / 1000;
+  }
+
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setLocal) {
+            return AlertDialog(
+              title: const Text("Map Filters", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF387664))),
+              backgroundColor: const Color(0xFFD3E6DB),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CheckboxListTile(
+                    title: const Text("Waste Reports"),
+                    value: _showWaste,
+                    activeColor: const Color(0xFF387664),
+                    onChanged: (v) => setLocal(() => setState(() => _showWaste = v!)),
+                  ),
+                  CheckboxListTile(
+                    title: const Text("Dumping Stations"),
+                    value: _showStations,
+                    activeColor: const Color(0xFF387664),
+                    onChanged: (v) => setLocal(() => setState(() => _showStations = v!)),
+                  ),
+                  const Divider(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("Radius:", style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text("${_distanceKm.toStringAsFixed(1)} km"),
+                      ],
+                    ),
+                  ),
+                  Slider(
+                    value: _distanceKm,
+                    min: 1,
+                    max: 100,
+                    activeColor: const Color(0xFF387664),
+                    onChanged: (v) => setLocal(() => setState(() => _distanceKm = v)),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Apply", style: TextStyle(color: Color(0xFF387664), fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) => _loadMarkers());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text("Waste & Station Map", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: const Color(0xFF387664),
         elevation: 0,
@@ -209,10 +295,23 @@ class _MapPageState extends State<MapPage> {
             const Center(child: CircularProgressIndicator(color: Color(0xFF387664))),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _loadMarkers,
-        backgroundColor: const Color(0xFF387664),
-        child: const Icon(Icons.refresh, color: Colors.white),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: "filterBtn",
+            onPressed: _showFilterDialog,
+            backgroundColor: const Color(0xFF387664),
+            child: const Icon(Icons.filter_list, color: Colors.white),
+          ),
+          const SizedBox(height: 10),
+          FloatingActionButton(
+            heroTag: "refreshBtn",
+            onPressed: _loadMarkers,
+            backgroundColor: const Color(0xFF387664),
+            child: const Icon(Icons.refresh, color: Colors.white),
+          ),
+        ],
       ),
     );
   }

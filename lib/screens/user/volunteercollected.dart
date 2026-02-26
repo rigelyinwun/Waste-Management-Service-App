@@ -21,6 +21,24 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
   final UserService _userService = UserService();
   bool _isProcessing = false;
   bool _actionTaken = false;
+  String? _senderRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSenderInfo();
+  }
+
+  Future<void> _fetchSenderInfo() async {
+    if (widget.volunteerId != null) {
+      final profile = await _userService.fetchUserProfile(widget.volunteerId!);
+      if (mounted) {
+        setState(() {
+          _senderRole = profile?.role;
+        });
+      }
+    }
+  }
 
   Future<void> _handleAction(bool isApprove) async {
     if (widget.volunteerId == null || _actionTaken) return;
@@ -36,12 +54,13 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
 
       final volunteerPhone = volunteerProfile?.phoneNumber ?? "N/A";
       final ownerPhone = ownerProfile?.phoneNumber ?? "N/A";
+      final isCompany = volunteerProfile?.role == 'company' || volunteerProfile?.role == 'admin';
 
       if (isApprove) {
         // Approve Logic
         await _reportService.updateReportStatus(widget.report.reportId, 'approved');
 
-        // Notify Volunteer
+        // Notify Volunteer/Company
         await _notificationService.sendNotification(
           NotificationModel(
             id: '',
@@ -61,7 +80,7 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
             id: '',
             recipientId: widget.report.userId,
             title: "Collection Approved",
-            subtitle: "You approved a collection request. Volunteer contact: $volunteerPhone",
+            subtitle: "You approved a ${isCompany ? 'company' : 'volunteer'} collection request. Contact: $volunteerPhone",
             type: 'collection_confirmation',
             relatedId: widget.report.reportId,
             senderId: widget.volunteerId,
@@ -76,10 +95,11 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
         }
       } else {
         // Reject Logic
-        // We might want to keep status as pending/matched but remove this specific volunteer's request
-        // For simplicity, let's just keep the status same but notify rejection
+        // Revert status to matched if it was a company request, or stay as it was
+        final newStatus = isCompany ? 'matched' : (widget.report.matchedCompanyId != null ? 'matched' : 'pending');
+        await _reportService.updateReportStatus(widget.report.reportId, newStatus);
         
-        // Notify Volunteer
+        // Notify Volunteer/Company
         await _notificationService.sendNotification(
           NotificationModel(
             id: '',
@@ -99,7 +119,7 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
             id: '',
             recipientId: widget.report.userId,
             title: "Collection Rejected",
-            subtitle: "You rejected the collection request from the volunteer.",
+            subtitle: "You rejected the collection request.",
             type: 'collection_rejection',
             relatedId: widget.report.reportId,
             senderId: widget.volunteerId,
@@ -142,9 +162,9 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
         backgroundColor: const Color(0xFF387664),
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Collection Details",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          (_senderRole == 'company' || _senderRole == 'admin') ? "Company Collect" : "Collection Details",
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -172,13 +192,15 @@ class _VolunteerCollectedPageState extends State<VolunteerCollectedPage> {
             const SizedBox(height: 10),
             _detailRow("Description:", widget.report.description),
             const SizedBox(height: 20),
-            const Text(
-              "A volunteer has requested to collect this waste. By approving, you agree to let them handle the collection.",
-              style: TextStyle(color: Colors.black54, fontSize: 14),
+            Text(
+              (_senderRole == 'company' || _senderRole == 'admin') 
+                ? "A company has requested to collect this waste. By approving, you agree to let them handle the collection and provide your contact information."
+                : "A volunteer has requested to collect this waste. By approving, you agree to let them handle the collection.",
+              style: const TextStyle(color: Colors.black54, fontSize: 14),
             ),
             const SizedBox(height: 30),
             
-            if ((widget.report.status == 'pending' || widget.report.status == 'matched' || widget.report.status == 'no_company_found') && !_actionTaken)
+            if ((widget.report.status == 'pending' || widget.report.status == 'matched' || widget.report.status == 'no_company_found' || widget.report.status == 'collecting') && !_actionTaken)
               Column(
                 children: [
                   SizedBox(

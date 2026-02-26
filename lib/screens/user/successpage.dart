@@ -10,7 +10,7 @@ class SubmissionSuccessPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Report Waste"),
         backgroundColor: const Color(0xFF387664),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

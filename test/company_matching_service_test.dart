@@ -60,5 +60,21 @@ void main() {
       final match = await service.findMatchingCompany('Organic Waste');
       expect(match, isNull);
     });
+
+    test('Should match "Paper-based" using keywords', () async {
+      // comp_multi has 'Paper'
+      final match = await service.findMatchingCompany('Paper-based');
+      expect(match, 'comp_multi');
+    });
+
+    test('Should match "Furniture" exactly', () async {
+      await fakeFirestore.collection('users').doc('comp_furniture').set({
+        'role': 'company',
+        'companyName': 'Furniture Recyclers',
+        'wasteCategories': ['Furniture'],
+      });
+      final match = await service.findMatchingCompany('Furniture');
+      expect(match, 'comp_furniture');
+    });
   });
 }

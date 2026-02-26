@@ -186,6 +186,54 @@ class _ReportPageState extends State<ReportPage> {
               Text("Your report is submitted!",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
             ]),
+            if (_submittedReport?.matchedCompanyId != null) ...[
+              const SizedBox(height: 15),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.green.withAlpha(100)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.business, color: Colors.green),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "We found a matched company: ${_submittedReport?.matchedCompanyName ?? 'Processing...'}",
+                        style: const TextStyle(
+                            color: Colors.green, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (_submittedReport != null && _submittedReport!.matchedCompanyId == null) ...[
+              const SizedBox(height: 15),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.orange.withAlpha(100)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "No direct company match found. Your report is now public for collection.",
+                        style: TextStyle(
+                            color: Colors.orange, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 15),
             if (_imageBytes != null)
               ClipRRect(
@@ -326,6 +374,20 @@ class _ReportPageState extends State<ReportPage> {
             Text(
                 "Hazard Level: ${_submittedReport?.aiAnalysis?.hazardLevel ?? 'N/A'}\nEstimated Cost: RM ${_submittedReport?.aiAnalysis?.estimatedCost ?? 0}",
                 style: const TextStyle(height: 1.5)),
+            if (_submittedReport?.matchedCompanyName != null) ...[
+              const Divider(height: 20),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Matched: ${_submittedReport?.matchedCompanyName}",
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: Color(0xFF2E5E4E)),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       );

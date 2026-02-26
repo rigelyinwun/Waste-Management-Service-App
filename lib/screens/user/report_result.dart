@@ -285,8 +285,18 @@ class _ResultItem extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
     child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [Text(label, style: const TextStyle(fontSize: 12)), Text(val, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))],
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            val,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          ),
+        ),
+      ],
     ),
   );
 }

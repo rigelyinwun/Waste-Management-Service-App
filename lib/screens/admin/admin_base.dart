@@ -4,6 +4,8 @@ import 'reports.dart';
 import 'dashboard.dart';
 import 'locations.dart';
 import '../user/profilepage.dart';
+import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
 
 class AdminBasePage extends StatefulWidget {
   const AdminBasePage({super.key});
@@ -70,9 +72,22 @@ class _AdminBasePageState extends State<AdminBasePage> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 28),
-            onPressed: () => Navigator.pushNamed(context, '/notification'),
+          StreamBuilder<int>(
+            stream: NotificationService().getUnreadCountStream(AuthService().currentUser?.uid ?? ''),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return IconButton(
+                icon: Badge(
+                  label: Text('$unreadCount'),
+                  isLabelVisible: unreadCount > 0,
+                  child: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 28),
+                ),
+                onPressed: () {
+                  NotificationService().markAllAsRead(AuthService().currentUser?.uid ?? '');
+                  Navigator.pushNamed(context, '/notification');
+                },
+              );
+            },
           ),
           const SizedBox(width: 8),
         ],

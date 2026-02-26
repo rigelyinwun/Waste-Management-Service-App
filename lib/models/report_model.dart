@@ -11,6 +11,7 @@ class Report {
   final String status;
   final AIAnalysis? aiAnalysis;
   final String? matchedCompanyId;
+  final String? matchedCompanyName;
   final Timestamp createdAt;
   final bool isPublic;
 
@@ -24,6 +25,7 @@ class Report {
     required this.status,
     this.aiAnalysis,
     this.matchedCompanyId,
+    this.matchedCompanyName,
     required this.createdAt,
     this.isPublic = false,
   });
@@ -38,6 +40,7 @@ class Report {
       'status': status,
       'aiAnalysis': aiAnalysis?.toMap(),
       'matchedCompanyId': matchedCompanyId,
+      'matchedCompanyName': matchedCompanyName,
       'createdAt': createdAt,
       'isPublic': isPublic,
     };
@@ -58,6 +61,7 @@ class Report {
           ? AIAnalysis.fromMap(data['aiAnalysis'])
           : null,
       matchedCompanyId: data['matchedCompanyId'],
+      matchedCompanyName: data['matchedCompanyName'],
       createdAt: data['createdAt'] ?? Timestamp.now(),
       isPublic: data['isPublic'] ?? false,
     );

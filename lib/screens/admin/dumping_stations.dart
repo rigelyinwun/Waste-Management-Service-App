@@ -188,6 +188,7 @@ class _DumpingStationsPageState extends State<DumpingStationsPage> {
     return Scaffold(
       backgroundColor: _pageMint,
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: _appBarGreen,
         elevation: 0,
         centerTitle: true,
@@ -1317,6 +1318,7 @@ class _StationCard extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               InkWell(
                 borderRadius: BorderRadius.circular(8),

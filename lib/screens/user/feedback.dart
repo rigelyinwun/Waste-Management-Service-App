@@ -20,7 +20,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
     backgroundColor: FeedbackStyles.headerTeal,
     elevation: 0,
     centerTitle: true,
-    automaticallyImplyLeading: false,
+    iconTheme: const IconThemeData(color: Colors.white),
+    automaticallyImplyLeading: true,
     title: Text(
       title,
       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
