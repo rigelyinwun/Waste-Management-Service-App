@@ -5,7 +5,7 @@ import '../../services/auth_service.dart';
 import '../../services/user_service.dart';
 import 'individual_signup.dart';
 import 'business_signup.dart';
-import 'login.dart'; // For GlobalCSS
+// For GlobalCSS
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
