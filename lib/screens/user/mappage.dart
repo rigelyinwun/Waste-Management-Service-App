@@ -1,18 +1,17 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:smart_waste/screens/user/report_result.dart';
 import '../../services/report_service.dart';
 import '../../services/dumping_station_service.dart';
 import '../../services/user_service.dart';
-import '../../services/auth_service.dart';
 import '../../models/report_model.dart';
 import '../../models/dumping_station_model.dart';
 import '../../models/user_model.dart';
-import '../admin/waste_profile.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -48,7 +47,6 @@ class _MapPageState extends State<MapPage> {
   final ReportService _reportService = ReportService();
   final DumpingStationService _stationService = DumpingStationService();
   final UserService _userService = UserService();
-  final AuthService _authService = AuthService();
 
   StreamSubscription? _reportsSub;
   StreamSubscription? _stationsSub;
@@ -252,7 +250,7 @@ class _MapPageState extends State<MapPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => WasteProfilePage(report: p.originalReport!),
+                  builder: (_) => ReportResultPage(report: p.originalReport!),
                 ),
               );
             } else {

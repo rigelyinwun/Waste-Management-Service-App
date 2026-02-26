@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import '../models/ai_analysis_model.dart';
 import 'package:http/http.dart' as http;
