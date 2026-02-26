@@ -1,10 +1,11 @@
+// ignore_for_file: await_only_futures
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   Future<UserCredential> registerWithEmail({
     required String email,
@@ -28,12 +29,15 @@ class AuthService {
 
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+      await _googleSignIn.initialize();
 
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
+      final GoogleSignInAccount googleUser =
+          await _googleSignIn.authenticate();
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
 
