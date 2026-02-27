@@ -151,6 +151,31 @@ flutter run --dart-define=AI_API_KEY=YOUR_API_KEY
 - Environmental impact analytics
 
 ---
+## Challenges Faced
+
+- AI Accuracy Limitations: Estimating weight, size, and recyclability from images requires prompt tuning and testing.
+
+- Real-time Synchronization: Preventing duplicate collection requests using Firebase concurrency handling.
+
+- Location Precision: Handling GPS inconsistencies and ensuring accurate Malaysia-only mapping.
+
+- API Key Security: Managing environment variables securely without exposing credentials.
+
+---
+
+## Future Roadmap
+
+- Improved AI Accuracy: Fine-tune prompts and integrate structured output validation.
+
+- Carbon Impact Dashboard: More advanced environmental impact analytics (CO₂ saved, landfill diversion rate).
+
+- NGO & Municipal Integration: Partner with local councils for official waste coordination.
+
+- Gamification System: Reward points and leaderboard for volunteers.
+
+- Scalability Expansion: Extend coverage beyond Malaysia to regional Southeast Asia.
+
+---
 
 ## Conclusion
 
