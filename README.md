@@ -121,6 +121,24 @@ SmartWaste provides:
 8. Feedback recorded
 9. Environmental impact calculated
 
+## To Run This Project:
+
+### 1. Configure Environment Variable
+Create an environment variable for your Gemini API key:
+```bash
+AI_API_KEY=YOUR_API_KEY
+```
+Alternatively, you can pass it directly using Dart define (recommended for Flutter).
+
+### 2. Install Dependencies
+```bash
+flutter pub get
+```
+### 3. Run the Application
+```bash
+flutter run --dart-define=AI_API_KEY=YOUR_API_KEY
+```
+
 ---
 
 ## Key Innovations
